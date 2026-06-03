@@ -1,0 +1,122 @@
+﻿/* Paleta de Cores Harmoniosa com #589eaa */
+:root {
+    --color-primary: #589eaa;
+    --color-primary-dark: #467a8a;
+    --color-primary-light: #9dc9d4;
+    --color-secondary: #6c757d;
+    --color-accent: #d4744e;
+    --color-success: #5ca86b;
+    --color-danger: #dc3545;
+    --color-warning: #f0ad4e;
+    --color-info: #5bc0de;
+}
+
+body {
+}
+
+/* Estilos para Botões Customizados */
+
+/* Botões Primários - Ação Principal */
+.btn-primary {
+    background-color: var(--color-primary);
+    border-color: var(--color-primary);
+    color: white;
+}
+
+.btn-primary:hover {
+    background-color: var(--color-primary-dark);
+    border-color: var(--color-primary-dark);
+    color: white;
+}
+
+.btn-primary:active,
+.btn-primary.active {
+    background-color: var(--color-primary-dark);
+    border-color: var(--color-primary-dark);
+}
+
+/* Botões Outline Primary - Editar */
+.btn-outline-primary {
+    color: var(--color-primary);
+    border-color: var(--color-primary);
+}
+
+.btn-outline-primary:hover {
+    background-color: var(--color-primary);
+    border-color: var(--color-primary);
+    color: white;
+}
+
+.btn-outline-primary:active,
+.btn-outline-primary.active {
+    background-color: var(--color-primary-dark);
+    border-color: var(--color-primary-dark);
+    color: white;
+}
+
+/* Botões Secundários - Cancelar */
+.btn-secondary {
+    background-color: var(--color-secondary);
+    border-color: var(--color-secondary);
+    color: white;
+}
+
+.btn-secondary:hover {
+    background-color: #5a6268;
+    border-color: #5a6268;
+    color: white;
+}
+
+.btn-secondary:active,
+.btn-secondary.active {
+    background-color: #545b62;
+    border-color: #545b62;
+}
+
+/* Botões Danger - Excluir */
+.btn-danger {
+    background-color: var(--color-danger);
+    border-color: var(--color-danger);
+    color: white;
+}
+
+.btn-danger:hover {
+    background-color: #c82333;
+    border-color: #bd2130;
+    color: white;
+}
+
+.btn-danger:active,
+.btn-danger.active {
+    background-color: #bd2130;
+    border-color: #b21f25;
+}
+
+.btn-outline-danger {
+    color: var(--color-danger);
+    border-color: var(--color-danger);
+}
+
+.btn-outline-danger:hover {
+    background-color: var(--color-danger);
+    border-color: var(--color-danger);
+    color: white;
+}
+
+.btn-outline-danger:active,
+.btn-outline-danger.active {
+    background-color: #c82333;
+    border-color: #bd2130;
+    color: white;
+}
+
+/* Desabilitar botões */
+.btn:disabled {
+    opacity: 0.65;
+    cursor: not-allowed;
+}
+
+/* Efeito de transição suave */
+.btn {
+    transition: all 0.3s ease;
+}

@@ -1,0 +1,63 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Elastic.Apm.Azure.Storage</name>
+    </assembly>
+    <members>
+        <member name="T:Elastic.Apm.Azure.Storage.AzureBlobStorageDiagnosticListener">
+            <summary>
+            Creates transactions and spans for Azure Blob Storage diagnostic events from Azure.Storage.Blobs
+            </summary>
+        </member>
+        <member name="T:Elastic.Apm.Azure.Storage.AzureBlobStorageDiagnosticsSubscriber">
+            <summary>
+            Subscribes to diagnostic source events from Azure.Storage.Blobs and Microsoft.Azure.Storage.Blob
+            </summary>
+        </member>
+        <member name="M:Elastic.Apm.Azure.Storage.AzureBlobStorageDiagnosticsSubscriber.Subscribe(Elastic.Apm.IApmAgent)">
+            <summary>
+            Subscribes diagnostic source events.
+            </summary>
+        </member>
+        <member name="T:Elastic.Apm.Azure.Storage.AzureFileShareStorageDiagnosticListener">
+            <summary>
+            Creates transactions and spans for Azure File Share Storage diagnostic events from Azure.Storage.Files.Shares
+            </summary>
+        </member>
+        <member name="T:Elastic.Apm.Azure.Storage.AzureFileShareStorageDiagnosticsSubscriber">
+            <summary>
+            Subscribes to diagnostic source events from Azure.Storage.Files.Shares
+            </summary>
+        </member>
+        <member name="M:Elastic.Apm.Azure.Storage.AzureFileShareStorageDiagnosticsSubscriber.Subscribe(Elastic.Apm.IApmAgent)">
+            <summary>
+            Subscribes diagnostic source events.
+            </summary>
+        </member>
+        <member name="T:Elastic.Apm.Azure.Storage.AzureQueueStorageDiagnosticListener">
+            <summary>
+            Creates transactions and spans for Azure Queue Storage diagnostic events from Azure.Storage.Queues
+            </summary>
+        </member>
+        <member name="T:Elastic.Apm.Azure.Storage.AzureQueueStorageDiagnosticListener.QueueUrl">
+            <summary>
+            Working with a queue url to extract the queue name and address.
+            </summary>
+        </member>
+        <member name="T:Elastic.Apm.Azure.Storage.AzureQueueStorageDiagnosticsSubscriber">
+            <summary>
+            Subscribes to diagnostic source events from Azure.Storage.Queues
+            </summary>
+        </member>
+        <member name="M:Elastic.Apm.Azure.Storage.AzureQueueStorageDiagnosticsSubscriber.Subscribe(Elastic.Apm.IApmAgent)">
+            <summary>
+            Subscribes diagnostic source events.
+            </summary>
+        </member>
+        <member name="T:Elastic.Apm.Azure.Storage.MicrosoftAzureBlobStorageTracer">
+            <summary>
+            Creates HTTP spans wth Azure Blob storage details from Microsoft.Azure.Storage.Blob
+            </summary>
+        </member>
+    </members>
+</doc>

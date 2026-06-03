@@ -1,0 +1,32 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd">
+  <metadata>
+    <id>AspNetCore.HealthChecks.UI</id>
+    <version>5.0.1</version>
+    <authors>Xabaril Contributors</authors>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <license type="expression">Apache-2.0</license>
+    <licenseUrl>https://licenses.nuget.org/Apache-2.0</licenseUrl>
+    <projectUrl>http://github.com/xabaril/AspNetCore.Diagnostics.HealthChecks</projectUrl>
+    <description>HealthChecks.UI Is a ASP.NET Core UI viewer of ASP.NET Core HealthChecks.For more information see https://github.com/Xabaril/AspNetCore.Diagnostics.HealthChecks</description>
+    <tags>HealthCheck UI</tags>
+    <repository type="git" url="https://github.com/xabaril/AspNetCore.Diagnostics.HealthChecks" commit="365097bf535212384015d0b4d2405e55ad33f653" />
+    <dependencies>
+      <group targetFramework="net5.0">
+        <dependency id="AspNetCore.HealthChecks.UI.Core" version="5.0.1" exclude="Build,Analyzers" />
+        <dependency id="KubernetesClient" version="3.0.12" exclude="Build,Analyzers" />
+        <dependency id="Microsoft.EntityFrameworkCore" version="5.0.1" exclude="Build,Analyzers" />
+        <dependency id="Microsoft.EntityFrameworkCore.Design" version="5.0.1" exclude="Build,Analyzers" />
+        <dependency id="Microsoft.EntityFrameworkCore.Sqlite" version="5.0.1" exclude="Build,Analyzers" />
+        <dependency id="Microsoft.EntityFrameworkCore.Sqlite.Design" version="2.0.0-preview1-final" exclude="Build,Analyzers" />
+        <dependency id="Microsoft.Extensions.Http" version="5.0.0" exclude="Build,Analyzers" />
+        <dependency id="Newtonsoft.Json" version="12.0.3" exclude="Build,Analyzers" />
+      </group>
+    </dependencies>
+    <frameworkReferences>
+      <group targetFramework="net5.0">
+        <frameworkReference name="Microsoft.AspNetCore.App" />
+      </group>
+    </frameworkReferences>
+  </metadata>
+</package>

@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>HealthChecks.UI.Core</name>
+    </assembly>
+    <members>
+        <member name="T:ApiMarker">
+            <summary>
+            Used for test purposes only.
+            </summary>
+        </member>
+        <member name="M:Guard.ThrowIfNull``1(``0,System.Boolean,System.String)">
+            <summary>Throws an <see cref="T:System.ArgumentNullException"/> if <paramref name="argument"/> is null.</summary>
+            <param name="argument">The reference type argument to validate as non-null.</param>
+            <param name="throwOnEmptyString">Only applicable to strings.</param>
+            <param name="paramName">The name of the parameter with which <paramref name="argument"/> corresponds.</param>
+        </member>
+    </members>
+</doc>

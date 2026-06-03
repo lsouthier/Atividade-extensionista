@@ -1,0 +1,62 @@
+services:
+
+  db:
+    image: postgres:16-alpine
+    container_name: petapp-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: PetAppDb
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5435:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d PetAppDb"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - petapp-network
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    container_name: petapp-backend
+    restart: unless-stopped
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__DefaultConnection: "Host=db;Port=5432;Database=PetAppDb;Username=postgres;Password=postgres;Pooling=true"
+    ports:
+      - "5000:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - petapp-network
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+      args:
+        VITE_API_URL: /api
+    container_name: petapp-frontend
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    networks:
+      - petapp-network
+
+volumes:
+  pgdata:
+    driver: local
+
+networks:
+  petapp-network:
+    driver: bridge

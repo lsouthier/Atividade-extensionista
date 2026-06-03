@@ -1,0 +1,21 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd">
+  <metadata>
+    <id>AspNetCore.HealthChecks.Redis</id>
+    <version>2.2.4</version>
+    <authors>Xabaril Contributors</authors>
+    <owners>Xabaril Contributors</owners>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <licenseUrl>https://github.com/Xabaril/AspNetCore.Diagnostics.HealthChecks/blob/master/LICENSE</licenseUrl>
+    <projectUrl>http://github.com/xabaril/AspNetCore.Diagnostics.HealthChecks</projectUrl>
+    <description>HealthChecks.Redis is the health check package for Redis.</description>
+    <tags>HealthCheck Health Redis</tags>
+    <repository type="git" url="https://github.com/xabaril/AspNetCore.Diagnostics.HealthChecks" commit="1d301edb4423225a2f0766a4699f0fa9a75861aa" />
+    <dependencies>
+      <group targetFramework=".NETStandard2.0">
+        <dependency id="Microsoft.Extensions.Diagnostics.HealthChecks" version="2.2.0" exclude="Build,Analyzers" />
+        <dependency id="StackExchange.Redis" version="2.0.513" exclude="Build,Analyzers" />
+      </group>
+    </dependencies>
+  </metadata>
+</package>

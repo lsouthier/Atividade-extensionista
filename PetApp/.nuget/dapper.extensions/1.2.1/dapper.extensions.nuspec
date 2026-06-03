@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2011/08/nuspec.xsd">
+  <metadata>
+    <id>Dapper.Extensions</id>
+    <version>1.2.1.0</version>
+    <title>Dapper.Extensions</title>
+    <authors>zhang-xiao-ming</authors>
+    <owners>zhang-xiao-ming</owners>
+    <projectUrl>https://github.com/zhang-xiao-ming/Dapper.Extensions</projectUrl>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <description>一个基于Dapper扩展的ORM框架</description>
+    <copyright>Copyright 2016</copyright>
+    <dependencies>
+      <dependency id="Dapper" version="1.42" />
+    </dependencies>
+  </metadata>
+</package>

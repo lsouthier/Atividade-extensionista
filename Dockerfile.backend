@@ -1,0 +1,54 @@
+# ── Stage 1: Build ──────────────────────────────────────────────────────────
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
+WORKDIR /src
+
+# Instala certificados de CA
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+# Define variáveis básicas do .NET
+ENV DOTNET_SKIP_FIRST_TIME_EXPERIENCE=true
+ENV DOTNET_CLI_TELEMETRY_OPTOUT=true
+ENV DOTNET_NUGET_SIGNATURE_VERIFICATION=false
+
+# Copia a configuração NuGet
+COPY nuget.config ./
+
+# Copia o arquivo do projeto e restaura dependências
+COPY PetApp/PetApp.csproj PetApp/
+RUN dotnet restore PetApp/PetApp.csproj --configfile nuget.config --disable-parallel
+
+# Copia o restante do código
+COPY PetApp/ PetApp/
+
+# Publica a aplicação
+WORKDIR /src/PetApp
+RUN dotnet publish PetApp.csproj \
+    -c Release \
+    -o /app/publish \
+    --no-restore \
+    /p:UseAppHost=false
+
+# ── Stage 2: Runtime ────────────────────────────────────────────────────────
+FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
+WORKDIR /app
+
+# Cria usuário não-root
+RUN groupadd -r appgroup \
+    && useradd -r -g appgroup appuser
+
+# Copia os arquivos publicados
+COPY --from=build /app/publish .
+
+# Ajusta permissões
+RUN chown -R appuser:appgroup /app
+
+USER appuser
+
+EXPOSE 8080
+
+ENV ASPNETCORE_URLS=http://+:8080
+ENV ASPNETCORE_ENVIRONMENT=Production
+
+ENTRYPOINT ["dotnet", "PetApp.dll"]

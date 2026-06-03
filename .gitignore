@@ -1,0 +1,42 @@
+# Sistema
+.DS_Store
+Thumbs.db
+
+# Visual Studio / VS Code
+.vs/
+.vscode/
+*.user
+*.suo
+*.rsuser
+*.lscache
+
+# .NET
+**/bin/
+**/obj/
+TestResults/
+*.nupkg
+
+# Node / Vite
+**/node_modules/
+**/dist/
+**/build/
+.npm/
+.yarn/
+
+# Docker / ambiente
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+logs/
+
+# Temporários
+tmp/
+temp/
+
+# Secrets locais
+appsettings.Local.json
+appsettings.Development.local.json
+appsettings.Production.local.json

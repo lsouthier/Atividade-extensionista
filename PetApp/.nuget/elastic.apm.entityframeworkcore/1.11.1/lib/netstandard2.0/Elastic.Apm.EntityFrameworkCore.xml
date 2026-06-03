@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Elastic.Apm.EntityFrameworkCore</name>
+    </assembly>
+    <members>
+        <member name="T:Elastic.Apm.EntityFrameworkCore.EfCoreDiagnosticsSubscriber">
+            <summary>
+            Manages the Entity Framework Core listener, which listens to EF Core events
+            </summary>
+        </member>
+        <member name="M:Elastic.Apm.EntityFrameworkCore.EfCoreDiagnosticsSubscriber.Subscribe(Elastic.Apm.IApmAgent)">
+            <summary>
+            Start listening for EF Core <see cref="N:Elastic.Apm.DiagnosticSource"/> events
+            </summary>
+        </member>
+    </members>
+</doc>

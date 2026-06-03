@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Elastic.Apm.Elasticsearch</name>
+    </assembly>
+    <members>
+        <member name="T:Elastic.Apm.Elasticsearch.ElasticsearchDiagnosticsSubscriber">
+            <summary>
+            Registers for listeners from the elasticsearch client.
+            </summary>
+        </member>
+        <member name="M:Elastic.Apm.Elasticsearch.ElasticsearchDiagnosticsSubscriber.Subscribe(Elastic.Apm.IApmAgent)">
+            <summary>
+            Start listening for elasticsearch <see cref="N:Elastic.Apm.DiagnosticSource"/> events
+            </summary>
+        </member>
+    </members>
+</doc>

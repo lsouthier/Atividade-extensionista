@@ -1,0 +1,46 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Elastic.Apm.Azure.ServiceBus</name>
+    </assembly>
+    <members>
+        <member name="T:Elastic.Apm.Azure.ServiceBus.AzureMessagingServiceBusDiagnosticListener">
+            <summary>
+            Creates spans for diagnostic events from Azure.Messaging.ServiceBus
+            </summary>
+        </member>
+        <member name="M:Elastic.Apm.Azure.ServiceBus.AzureMessagingServiceBusDiagnosticListener.PopulateLinks">
+            <summary>
+            <see cref="!:ServiceBusReceiver"/> creates activity links based on the `Diagnostic-Id` property of the message.
+            This property is written based the activity on the producer side.
+            When reading a batch of messages we create span links for each parent.
+            We walk up the activity chain, look for the ServiceBusReceiver activity and use these activity links to create span links.
+            </summary>
+        </member>
+        <member name="T:Elastic.Apm.Azure.ServiceBus.AzureMessagingServiceBusDiagnosticsSubscriber">
+            <summary>
+            Subscribes to diagnostic source events from Azure.Messaging.ServiceBus
+            </summary>
+        </member>
+        <member name="M:Elastic.Apm.Azure.ServiceBus.AzureMessagingServiceBusDiagnosticsSubscriber.Subscribe(Elastic.Apm.IApmAgent)">
+            <summary>
+            Subscribes diagnostic source events.
+            </summary>
+        </member>
+        <member name="T:Elastic.Apm.Azure.ServiceBus.MicrosoftAzureServiceBusDiagnosticListener">
+            <summary>
+            Creates spans for diagnostic events from Microsoft.Azure.ServiceBus
+            </summary>
+        </member>
+        <member name="T:Elastic.Apm.Azure.ServiceBus.MicrosoftAzureServiceBusDiagnosticsSubscriber">
+            <summary>
+            Subscribes to diagnostic source events from Microsoft.Azure.ServiceBus
+            </summary>
+        </member>
+        <member name="M:Elastic.Apm.Azure.ServiceBus.MicrosoftAzureServiceBusDiagnosticsSubscriber.Subscribe(Elastic.Apm.IApmAgent)">
+            <summary>
+            Subscribes diagnostic source events.
+            </summary>
+        </member>
+    </members>
+</doc>

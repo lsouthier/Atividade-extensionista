@@ -1,0 +1,26 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd">
+  <metadata>
+    <id>AspNetCore.HealthChecks.Prometheus.Metrics</id>
+    <version>5.0.1</version>
+    <authors>Xabaril Contributors</authors>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <license type="expression">Apache-2.0</license>
+    <licenseUrl>https://licenses.nuget.org/Apache-2.0</licenseUrl>
+    <projectUrl>http://github.com/xabaril/AspNetCore.Diagnostics.HealthChecks</projectUrl>
+    <description>HealthChecks.Publisher.Prometheus is a health check prometheus metrics exporter.</description>
+    <tags>HealthCheck Prometheus Prometheus Exporter Metrics</tags>
+    <repository type="git" url="https://github.com/xabaril/AspNetCore.Diagnostics.HealthChecks" commit="365097bf535212384015d0b4d2405e55ad33f653" />
+    <dependencies>
+      <group targetFramework="net5.0">
+        <dependency id="Microsoft.Extensions.Diagnostics.HealthChecks" version="5.0.1" exclude="Build,Analyzers" />
+        <dependency id="prometheus-net" version="4.0.0" exclude="Build,Analyzers" />
+      </group>
+    </dependencies>
+    <frameworkReferences>
+      <group targetFramework="net5.0">
+        <frameworkReference name="Microsoft.AspNetCore.App" />
+      </group>
+    </frameworkReferences>
+  </metadata>
+</package>

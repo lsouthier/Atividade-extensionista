@@ -1,0 +1,28 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd">
+  <metadata>
+    <id>Crc32.NET</id>
+    <version>1.2.0</version>
+    <title>Crc32 for .NET</title>
+    <authors>force</authors>
+    <owners>force</owners>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <licenseUrl>https://github.com/force-net/Crc32.NET/blob/develop/LICENSE</licenseUrl>
+    <projectUrl>https://github.com/force-net/Crc32.NET</projectUrl>
+    <iconUrl>http://files.force-net.com/crc32-nuget-ico.png</iconUrl>
+    <description>Fast version of Crc32 &amp; Crc32C algorithms for .NET and .NET Core. It is up to 3x-5x times better than other "fast" implemenations. Code based on Crc32C.NET library.</description>
+    <releaseNotes>Added helper methods for computing and validating Crc32 (can be convenient sometimes)
+Added support for .NET Standard 2.0</releaseNotes>
+    <copyright>Copyright by Force 2016-2017</copyright>
+    <tags>crc32 crc-32 crc crc32c .NET</tags>
+    <dependencies>
+      <group targetFramework=".NETFramework2.0" />
+      <group targetFramework=".NETStandard1.3">
+        <dependency id="NETStandard.Library" version="1.6.0" />
+      </group>
+      <group targetFramework=".NETStandard2.0">
+        <dependency id="NETStandard.Library" version="2.0.0" />
+      </group>
+    </dependencies>
+  </metadata>
+</package>

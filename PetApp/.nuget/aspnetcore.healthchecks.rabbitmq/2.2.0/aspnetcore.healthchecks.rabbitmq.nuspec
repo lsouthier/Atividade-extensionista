@@ -1,0 +1,21 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd">
+  <metadata>
+    <id>AspNetCore.HealthChecks.Rabbitmq</id>
+    <version>2.2.0</version>
+    <authors>Xabaril Contributors</authors>
+    <owners>Xabaril Contributors</owners>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <licenseUrl>https://github.com/Xabaril/AspNetCore.Diagnostics.HealthChecks/blob/master/LICENSE</licenseUrl>
+    <projectUrl>http://github.com/xabaril/AspNetCore.Diagnostics.HealthChecks</projectUrl>
+    <description>HealthChecks.RabbitMQ is the health check package for RabbitMQ.</description>
+    <tags>HealthCheck Health RabbitMQ</tags>
+    <repository type="git" url="https://github.com/xabaril/AspNetCore.Diagnostics.HealthChecks" commit="08ca6a412410904627fa22ca51d0f28698223022" />
+    <dependencies>
+      <group targetFramework=".NETStandard2.0">
+        <dependency id="Microsoft.Extensions.Diagnostics.HealthChecks" version="2.2.0" exclude="Build,Analyzers" />
+        <dependency id="RabbitMQ.Client" version="5.0.1" exclude="Build,Analyzers" />
+      </group>
+    </dependencies>
+  </metadata>
+</package>

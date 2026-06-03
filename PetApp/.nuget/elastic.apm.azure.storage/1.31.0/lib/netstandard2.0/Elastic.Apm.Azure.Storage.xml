@@ -1,0 +1,96 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Elastic.Apm.Azure.Storage</name>
+    </assembly>
+    <members>
+        <member name="T:Elastic.Apm.Azure.Storage.AzureBlobStorageDiagnosticListener">
+            <summary>
+            Creates transactions and spans for Azure Blob Storage diagnostic events from Azure.Storage.Blobs
+            </summary>
+        </member>
+        <member name="T:Elastic.Apm.Azure.Storage.AzureBlobStorageDiagnosticsSubscriber">
+            <summary>
+            Subscribes to diagnostic source events from Azure.Storage.Blobs and Microsoft.Azure.Storage.Blob
+            </summary>
+        </member>
+        <member name="M:Elastic.Apm.Azure.Storage.AzureBlobStorageDiagnosticsSubscriber.Subscribe(Elastic.Apm.IApmAgent)">
+            <summary>
+            Subscribes diagnostic source events.
+            </summary>
+        </member>
+        <member name="T:Elastic.Apm.Azure.Storage.AzureCoreDiagnosticListener">
+            <summary>
+            Subscribes to Azure.Core events to set the url tag on parent activities.
+            </summary>
+        </member>
+        <member name="M:Elastic.Apm.Azure.Storage.AzureCoreDiagnosticListener.FindTargetActivity(System.Diagnostics.Activity)">
+             <summary>
+             Finds the target Azure activity to set the url tag on.
+             Some Azure SDK versions and methods fire two activities with the same operation name for the same operation e.g.
+            
+             QueueClient.ReceiveMessage activity in package version 12.7.0 is started twice for QueueClient.ReceiveMessageAsync():
+             https://github.com/Azure/azure-sdk-for-net/blob/b0403de6fff3cfc961deba543e3c657287fc0626/sdk/storage/Azure.Storage.Queues/src/QueueClient.cs#L2343-L2347
+             and in the internal method call ReceiveMessagesInternal
+             https://github.com/Azure/azure-sdk-for-net/blob/b0403de6fff3cfc961deba543e3c657287fc0626/sdk/storage/Azure.Storage.Queues/src/QueueClient.cs#L2180-L2183
+            
+             With regards to Elastic APM, we are only interested in the first QueueClient.ReceiveMessage activity, for which we will start a
+             transaction and start an APM transaction Activity. In this case, we end up with the following Activity chain:
+            
+             QueueClient.ReceiveMessage activity (the activity we're interested in and want to set url tag on)
+             Apm Transaction activity
+             QueueClient.ReceiveMessage activity
+             Azure.Core.Http.Request activity (which contains the http.url tag with the url)
+            
+             For other Azure SDK versions and methods, only a single activity might be started. This is the majority case and we will start a
+             span when this single activity is started. This ends up with the following Activity chain:
+            
+             Azure SDK activity (the activity we're interested in and want to set url tag on)
+             Apm Transaction activity
+             Azure.Core.Http.Request activity (which contains the http.url tag with the url)
+             </summary>
+             <param name="activity"></param>
+             <returns></returns>
+        </member>
+        <member name="T:Elastic.Apm.Azure.Storage.AzureFileShareStorageDiagnosticListener">
+            <summary>
+            Creates transactions and spans for Azure File Share Storage diagnostic events from Azure.Storage.Files.Shares
+            </summary>
+        </member>
+        <member name="T:Elastic.Apm.Azure.Storage.AzureFileShareStorageDiagnosticsSubscriber">
+            <summary>
+            Subscribes to diagnostic source events from Azure.Storage.Files.Shares
+            </summary>
+        </member>
+        <member name="M:Elastic.Apm.Azure.Storage.AzureFileShareStorageDiagnosticsSubscriber.Subscribe(Elastic.Apm.IApmAgent)">
+            <summary>
+            Subscribes diagnostic source events.
+            </summary>
+        </member>
+        <member name="T:Elastic.Apm.Azure.Storage.AzureQueueStorageDiagnosticListener">
+            <summary>
+            Creates transactions and spans for Azure Queue Storage diagnostic events from Azure.Storage.Queues
+            </summary>
+        </member>
+        <member name="T:Elastic.Apm.Azure.Storage.AzureQueueStorageDiagnosticListener.QueueUrl">
+            <summary>
+            Working with a queue url to extract the queue name and address.
+            </summary>
+        </member>
+        <member name="T:Elastic.Apm.Azure.Storage.AzureQueueStorageDiagnosticsSubscriber">
+            <summary>
+            Subscribes to diagnostic source events from Azure.Storage.Queues
+            </summary>
+        </member>
+        <member name="M:Elastic.Apm.Azure.Storage.AzureQueueStorageDiagnosticsSubscriber.Subscribe(Elastic.Apm.IApmAgent)">
+            <summary>
+            Subscribes diagnostic source events.
+            </summary>
+        </member>
+        <member name="T:Elastic.Apm.Azure.Storage.MicrosoftAzureBlobStorageTracer">
+            <summary>
+            Creates HTTP spans wth Azure Blob storage details from Microsoft.Azure.Storage.Blob
+            </summary>
+        </member>
+    </members>
+</doc>
