@@ -40,3 +40,7 @@ temp/
 appsettings.Local.json
 appsettings.Development.local.json
 appsettings.Production.local.json
+
+# NuGet local cache
+.nuget/
+**/.nuget/
