@@ -16,6 +16,11 @@ O PetApp ACAT tem como objetivo permitir o cadastro e gerenciamento de:
 
 O sistema também possui autenticação por login e senha, impedindo acesso não autorizado às telas internas da aplicação.
 
+## Configuração inicial e primeiro acesso
+
+Após clonar o repositório e subir os containers com Docker Compose, o sistema estará disponível na porta `3000`.
+Usuário e senha iniciais: admin/admin
+
 ## Tecnologias utilizadas
 
 ### Backend
