@@ -18,7 +18,7 @@ O sistema também possui autenticação por login e senha, impedindo acesso não
 
 ## Configuração inicial e primeiro acesso
 
-Após clonar o repositório e subir os containers com Docker Compose, o sistema estará disponível na porta `3000`.
+Após clonar o repositório e subir os containers com Docker Compose, o sistema estará disponível na porta `80`.
 Usuário e senha iniciais: admin/admin
 
 ## Tecnologias utilizadas
