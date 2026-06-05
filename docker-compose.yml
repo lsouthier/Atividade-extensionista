@@ -1,5 +1,4 @@
 services:
-
   db:
     image: postgres:16-alpine
     container_name: petapp-db
@@ -9,7 +8,7 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
     ports:
-      - "5435:5432"
+      - "127.0.0.1:5435:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -24,14 +23,15 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.backend
+    image: acat-backend
     container_name: petapp-backend
     restart: unless-stopped
     environment:
       ASPNETCORE_ENVIRONMENT: Production
       ASPNETCORE_URLS: http://+:8080
-      ConnectionStrings__DefaultConnection: "Host=db;Port=5432;Database=PetAppDb;Username=postgres;Password=postgres;Pooling=true"
+      ConnectionStrings__DefaultConnection: Host=db;Port=5432;Database=PetAppDb;Username=postgres;Password=postgres
     ports:
-      - "5000:8080"
+      - "127.0.0.1:5000:8080"
     depends_on:
       db:
         condition: service_healthy
@@ -42,12 +42,11 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.frontend
-      args:
-        VITE_API_URL: /api
+    image: acat-frontend
     container_name: petapp-frontend
     restart: unless-stopped
     ports:
-      - "80:80"
+      - "127.0.0.1:3000:80"
     depends_on:
       - backend
     networks:
@@ -55,7 +54,6 @@ services:
 
 volumes:
   pgdata:
-    driver: local
 
 networks:
   petapp-network:

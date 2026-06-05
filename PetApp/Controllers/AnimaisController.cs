@@ -162,13 +162,17 @@ namespace PetApp.Controllers
         [HttpDelete("{id:int}")]
         public async Task<IActionResult> DeleteAnimal(int id, [FromQuery] bool excluirCastracoes = false)
         {
-            var animalExiste = await _context.Animais.AnyAsync(a => a.Id == id);
-            if (!animalExiste)
+            var animal = await _context.Animais.FindAsync(id);
+            if (animal == null)
             {
                 return NotFound();
             }
 
-            var totalCastracoes = await _context.Castracoes.CountAsync(c => c.IdAnimal == id);
+            var castracoes = await _context.Castracoes
+                .Where(c => c.IdAnimal == id)
+                .ToListAsync();
+
+            var totalCastracoes = castracoes.Count;
 
             if (totalCastracoes > 0 && !excluirCastracoes)
             {
@@ -188,21 +192,12 @@ namespace PetApp.Controllers
             {
                 if (totalCastracoes > 0)
                 {
-                    await _context.Castracoes
-                        .Where(c => c.IdAnimal == id)
-                        .ExecuteDeleteAsync();
+                    _context.Castracoes.RemoveRange(castracoes);
                 }
 
-                var linhasAnimal = await _context.Animais
-                    .Where(a => a.Id == id)
-                    .ExecuteDeleteAsync();
+                _context.Animais.Remove(animal);
 
-                if (linhasAnimal == 0)
-                {
-                    await transaction.RollbackAsync();
-                    return NotFound();
-                }
-
+                await _context.SaveChangesAsync();
                 await transaction.CommitAsync();
 
                 return NoContent();

@@ -1,6 +1,8 @@
+using System.Net;
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -10,8 +12,25 @@ var builder = WebApplication.CreateBuilder(args);
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 
+builder.Services.AddHttpContextAccessor();
+
 builder.Services.AddDbContext<PetAppContext>(options =>
     options.UseNpgsql(connectionString));
+
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders =
+        ForwardedHeaders.XForwardedFor |
+        ForwardedHeaders.XForwardedProto |
+        ForwardedHeaders.XForwardedHost;
+
+    options.KnownIPNetworks.Clear();
+    options.KnownProxies.Clear();
+
+    options.KnownIPNetworks.Add(System.Net.IPNetwork.Parse("172.16.0.0/12"));
+    options.KnownIPNetworks.Add(System.Net.IPNetwork.Parse("10.0.0.0/8"));
+    options.KnownIPNetworks.Add(System.Net.IPNetwork.Parse("192.168.0.0/16"));
+});
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
@@ -67,6 +86,8 @@ builder.Services.AddCors(options =>
 var app = builder.Build();
 
 await InicializarBancoEUsuarioAdminAsync(app);
+
+app.UseForwardedHeaders();
 
 app.UseSwagger();
 app.UseSwaggerUI(c =>

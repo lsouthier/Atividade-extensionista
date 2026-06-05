@@ -1,0 +1,147 @@
+.petapp-navbar {
+    background-color: #589eaa;
+}
+
+.petapp-navbar-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.petapp-logo {
+    height: 80px;
+    width: auto;
+}
+
+.petapp-menu-button {
+    display: none;
+    border: 1px solid rgba(255, 255, 255, 0.35);
+    background: transparent;
+    color: #ffffff;
+    border-radius: 0.5rem;
+    padding: 0.55rem 0.75rem;
+    font-size: 1.4rem;
+    line-height: 1;
+}
+
+.petapp-menu {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.petapp-menu-links {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.petapp-menu-link {
+    color: rgba(255, 255, 255, 0.72);
+    text-decoration: none;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.petapp-menu-link:hover,
+.petapp-menu-link.active {
+    color: #ffffff;
+}
+
+.petapp-user-area {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.petapp-table-scroll {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.petapp-table-scroll table {
+    min-width: 760px;
+}
+
+@media (max-width: 768px) {
+    .petapp-navbar {
+        padding: 1.25rem 0;
+    }
+
+    .petapp-navbar-inner {
+        align-items: flex-start;
+    }
+
+    .petapp-logo {
+        height: 95px;
+    }
+
+    .petapp-menu-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        margin-top: 0.5rem;
+    }
+
+    .petapp-menu {
+        display: none;
+        width: 100%;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.75rem;
+        margin-top: 1rem;
+        padding: 1rem;
+        border-radius: 0.75rem;
+        background: rgba(255, 255, 255, 0.12);
+    }
+
+    .petapp-menu.aberto {
+        display: flex;
+    }
+
+    .petapp-menu-links {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.25rem;
+    }
+
+    .petapp-menu-link {
+        display: block;
+        padding: 0.65rem 0.75rem;
+        border-radius: 0.5rem;
+    }
+
+    .petapp-menu-link.active {
+        background: rgba(255, 255, 255, 0.18);
+    }
+
+    .petapp-user-area {
+        justify-content: space-between;
+        border-top: 1px solid rgba(255, 255, 255, 0.25);
+        padding-top: 0.75rem;
+    }
+
+    .container {
+        max-width: 100%;
+    }
+
+    h2,
+    .h4 {
+        font-size: 1.55rem;
+    }
+
+    .btn {
+        white-space: nowrap;
+    }
+
+    .table-responsive {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .table-responsive table {
+        min-width: 760px;
+    }
+}

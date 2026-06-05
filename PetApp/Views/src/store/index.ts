@@ -5,6 +5,7 @@ import clinicasReducer from './clinicasSlice';
 import castracoeReducer from './castracoeSlice';
 import authReducer from './authSlice';
 import usuariosReducer from './usuariosSlice';
+import auditoriaReducer from './auditoriaSlice';
 import { debugMiddleware } from './middleware/debugMiddleware';
 
 export const store = configureStore({
@@ -14,7 +15,8 @@ export const store = configureStore({
         tutores: tutoresReducer,
         clinicas: clinicasReducer,
         castracoes: castracoeReducer,
-        usuarios: usuariosReducer
+        usuarios: usuariosReducer,
+        auditoria: auditoriaReducer
     },
     middleware: (getDefaultMiddleware) =>
         getDefaultMiddleware().concat(debugMiddleware)

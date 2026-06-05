@@ -1,6 +1,8 @@
 using System.IdentityModel.Tokens.Jwt;
+using System.Net;
 using System.Security.Claims;
 using System.Text;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -58,6 +60,8 @@ namespace PetApp.Controllers
 
             var token = GerarToken(usuario, expiraEmUtc);
 
+            await RegistrarLoginAsync(usuario);
+
             return Ok(new LoginResponseDto
             {
                 Token = token,
@@ -86,6 +90,127 @@ namespace PetApp.Controllers
             }
 
             return Ok(MapToReadDto(usuario));
+        }
+
+        private async Task RegistrarLoginAsync(UsuarioSistema usuario)
+        {
+            _context.AuditoriasSistema.Add(new AuditoriaSistema
+            {
+                DataHoraUtc = DateTime.UtcNow,
+                UsuarioId = usuario.Id,
+                UsuarioNome = usuario.NomeUsuario,
+                Acao = "LOGIN",
+                Entidade = "Auth",
+                EntidadeId = usuario.Id.ToString(),
+                ValoresDepois = "{\"Evento\":\"Login realizado com sucesso\"}",
+                IpOrigem = ObterIpOrigem(HttpContext),
+                UserAgent = HttpContext.Request.Headers.UserAgent.ToString()
+            });
+
+            await _context.SaveChangesAsync();
+        }
+
+
+        private static string? ObterIpOrigem(HttpContext? httpContext)
+        {
+            if (httpContext == null)
+            {
+                return null;
+            }
+
+            var headers = httpContext.Request.Headers;
+            var candidatos = new List<string?>();
+
+            if (headers.TryGetValue("CF-Connecting-IP", out var cfIp))
+            {
+                candidatos.Add(cfIp.FirstOrDefault());
+            }
+
+            if (headers.TryGetValue("X-Forwarded-For", out var xff))
+            {
+                candidatos.AddRange(
+                    xff.ToString()
+                        .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                );
+            }
+
+            if (headers.TryGetValue("X-Real-IP", out var realIp))
+            {
+                candidatos.Add(realIp.FirstOrDefault());
+            }
+
+            candidatos.Add(httpContext.Connection.RemoteIpAddress?.ToString());
+
+            foreach (var candidato in candidatos)
+            {
+                var ip = NormalizarIp(candidato);
+
+                if (string.IsNullOrWhiteSpace(ip))
+                {
+                    continue;
+                }
+
+                if (!EhIpDockerOuInterno(ip))
+                {
+                    return ip;
+                }
+            }
+
+            return NormalizarIp(candidatos.FirstOrDefault(c => !string.IsNullOrWhiteSpace(c)));
+        }
+
+        private static string? NormalizarIp(string? ip)
+        {
+            if (string.IsNullOrWhiteSpace(ip))
+            {
+                return null;
+            }
+
+            ip = ip.Trim();
+
+            if (ip.StartsWith("::ffff:", StringComparison.OrdinalIgnoreCase))
+            {
+                ip = ip.Replace("::ffff:", "", StringComparison.OrdinalIgnoreCase);
+            }
+
+            return ip;
+        }
+
+        private static bool EhIpDockerOuInterno(string ip)
+        {
+            if (!IPAddress.TryParse(ip, out var endereco))
+            {
+                return false;
+            }
+
+            if (IPAddress.IsLoopback(endereco))
+            {
+                return true;
+            }
+
+            if (endereco.AddressFamily != System.Net.Sockets.AddressFamily.InterNetwork)
+            {
+                return false;
+            }
+
+            var bytes = endereco.GetAddressBytes();
+
+            if (bytes[0] == 10)
+            {
+                return true;
+            }
+
+            if (bytes[0] == 172 && bytes[1] >= 16 && bytes[1] <= 31)
+            {
+                return true;
+            }
+
+            if (bytes[0] == 192 && bytes[1] == 168)
+            {
+                return true;
+            }
+
+            return false;
         }
 
         private string GerarToken(UsuarioSistema usuario, DateTime expiraEmUtc)
