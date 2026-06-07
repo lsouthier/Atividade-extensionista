@@ -13,6 +13,7 @@ import { Animal, AnimalCreate, AnimalUpdate } from '../../api/animaisApi';
 import { AnimaisList } from './AnimaisList';
 import { AnimalForm } from './AnimalForm';
 import { AnimalDeleteModal } from './AnimalDeleteModal';
+import { Paginacao } from '../common/Paginacao';
 
 export const AnimaisPage: React.FC = () => {
     const dispatch = useDispatch<AppDispatch>();
@@ -22,10 +23,25 @@ export const AnimaisPage: React.FC = () => {
 
     const [modoEdicao, setModoEdicao] = useState(false);
     const [showFormModal, setShowFormModal] = useState(false);
+    const [pagina, setPagina] = useState(1);
+    const [tamanhoPagina, setTamanhoPagina] = useState(10);
 
     useEffect(() => {
         dispatch(carregarAnimais());
     }, [dispatch]);
+
+    const totalPaginas = Math.max(1, Math.ceil(itens.length / tamanhoPagina));
+
+    useEffect(() => {
+        if (pagina > totalPaginas) {
+            setPagina(totalPaginas);
+        }
+    }, [pagina, totalPaginas]);
+
+    const animaisPaginados = useMemo(() => {
+        const inicio = (pagina - 1) * tamanhoPagina;
+        return itens.slice(inicio, inicio + tamanhoPagina);
+    }, [itens, pagina, tamanhoPagina]);
 
     const animalConfirmacao = useMemo(() => {
         if (!confirmacaoExclusao) {
@@ -62,6 +78,7 @@ export const AnimaisPage: React.FC = () => {
 
         if (criarAnimal.fulfilled.match(result)) {
             setShowFormModal(false);
+            setPagina(1);
         }
     };
 
@@ -84,10 +101,15 @@ export const AnimaisPage: React.FC = () => {
         dispatch(limparConfirmacaoExclusaoAnimal());
     };
 
+    const handleMudarTamanhoPagina = (novoTamanho: number) => {
+        setTamanhoPagina(novoTamanho);
+        setPagina(1);
+    };
+
     return (
         <div className="row">
             <div className="col-12 mb-4">
-                <div className="d-flex justify-content-between align-items-center mb-2">
+                <div className="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
                     <h2 className="h4 mb-0">Lista de Animais</h2>
                     <button className="btn btn-primary btn-sm" onClick={handleNovo}>
                         Novo Animal
@@ -98,10 +120,20 @@ export const AnimaisPage: React.FC = () => {
                 {erro && <div className="alert alert-danger">{erro}</div>}
 
                 <AnimaisList
-                    animais={itens}
+                    animais={animaisPaginados}
                     onEditar={handleEditar}
                     onExcluir={handleSolicitarExcluir}
                 />
+
+                {itens.length > 0 && (
+                    <Paginacao
+                        pagina={pagina}
+                        tamanhoPagina={tamanhoPagina}
+                        totalRegistros={itens.length}
+                        onMudarPagina={setPagina}
+                        onMudarTamanhoPagina={handleMudarTamanhoPagina}
+                    />
+                )}
             </div>
 
             {showFormModal && (

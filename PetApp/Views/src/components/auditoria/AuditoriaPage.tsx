@@ -39,18 +39,43 @@ const badgeAcao = (acao: string): string => {
     }
 };
 
+const criarPaginasVisiveis = (paginaAtual: number, totalPaginas: number): number[] => {
+    const paginas = new Set<number>();
+
+    paginas.add(1);
+    paginas.add(totalPaginas);
+
+    for (let i = paginaAtual - 2; i <= paginaAtual + 2; i++) {
+        if (i >= 1 && i <= totalPaginas) {
+            paginas.add(i);
+        }
+    }
+
+    return Array.from(paginas).sort((a, b) => a - b);
+};
+
 export const AuditoriaPage: React.FC = () => {
     const dispatch = useDispatch<AppDispatch>();
-    const { itens, carregando, erro } = useSelector((state: RootState) => state.auditoria);
+    const {
+        itens,
+        carregando,
+        erro,
+        pagina,
+        tamanhoPagina,
+        totalRegistros,
+        totalPaginas
+    } = useSelector((state: RootState) => state.auditoria);
 
     const [entidade, setEntidade] = useState('');
     const [acao, setAcao] = useState('');
     const [usuario, setUsuario] = useState('');
+    const [tamanhoPaginaLocal, setTamanhoPaginaLocal] = useState(25);
     const [detalhe, setDetalhe] = useState<Auditoria | null>(null);
 
-    const carregar = () => {
+    const carregar = (paginaSolicitada = 1, tamanhoSolicitado = tamanhoPaginaLocal) => {
         dispatch(carregarAuditorias({
-            limite: 300,
+            pagina: paginaSolicitada,
+            tamanhoPagina: tamanhoSolicitado,
             entidade: entidade || undefined,
             acao: acao || undefined,
             usuario: usuario || undefined
@@ -58,14 +83,35 @@ export const AuditoriaPage: React.FC = () => {
     };
 
     useEffect(() => {
-        carregar();
+        carregar(1, tamanhoPaginaLocal);
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [dispatch]);
+
+    const handleFiltrar = () => {
+        carregar(1, tamanhoPaginaLocal);
+    };
+
+    const handleAtualizar = () => {
+        carregar(pagina, tamanhoPaginaLocal);
+    };
+
+    const handleTamanhoPagina = (novoTamanho: number) => {
+        setTamanhoPaginaLocal(novoTamanho);
+        carregar(1, novoTamanho);
+    };
+
+    const inicio = totalRegistros === 0
+        ? 0
+        : ((pagina - 1) * tamanhoPagina) + 1;
+
+    const fim = Math.min(pagina * tamanhoPagina, totalRegistros);
+
+    const paginasVisiveis = criarPaginasVisiveis(pagina, totalPaginas);
 
     return (
         <div className="row">
             <div className="col-12 mb-4">
-                <div className="d-flex justify-content-between align-items-center mb-3">
+                <div className="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
                     <div>
                         <h2 className="h4 mb-0">Auditoria e Fluxo de Dados</h2>
                         <small className="text-muted">
@@ -73,7 +119,7 @@ export const AuditoriaPage: React.FC = () => {
                         </small>
                     </div>
 
-                    <button className="btn btn-primary btn-sm" onClick={carregar}>
+                    <button className="btn btn-primary btn-sm" onClick={handleAtualizar}>
                         Atualizar
                     </button>
                 </div>
@@ -113,7 +159,7 @@ export const AuditoriaPage: React.FC = () => {
                                 </select>
                             </div>
 
-                            <div className="col-md-4">
+                            <div className="col-md-3">
                                 <label className="form-label">Usuário</label>
                                 <input
                                     className="form-control form-control-sm"
@@ -123,8 +169,22 @@ export const AuditoriaPage: React.FC = () => {
                                 />
                             </div>
 
+                            <div className="col-md-1">
+                                <label className="form-label">Linhas</label>
+                                <select
+                                    className="form-select form-select-sm"
+                                    value={tamanhoPaginaLocal}
+                                    onChange={(e) => handleTamanhoPagina(Number(e.target.value))}
+                                >
+                                    <option value={10}>10</option>
+                                    <option value={25}>25</option>
+                                    <option value={50}>50</option>
+                                    <option value={100}>100</option>
+                                </select>
+                            </div>
+
                             <div className="col-md-2 d-flex align-items-end">
-                                <button className="btn btn-secondary btn-sm w-100" onClick={carregar}>
+                                <button className="btn btn-secondary btn-sm w-100" onClick={handleFiltrar}>
                                     Filtrar
                                 </button>
                             </div>
@@ -140,45 +200,100 @@ export const AuditoriaPage: React.FC = () => {
                 )}
 
                 {itens.length > 0 && (
-                    <div className="table-responsive">
-                        <table className="table table-sm table-striped align-middle">
-                            <thead className="table-light">
-                                <tr>
-                                    <th>Data/Hora</th>
-                                    <th>Usuário</th>
-                                    <th>Ação</th>
-                                    <th>Entidade</th>
-                                    <th>ID Registro</th>
-                                    <th>IP</th>
-                                    <th style={{ width: 100 }}>Detalhes</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {itens.map(item => (
-                                    <tr key={item.id}>
-                                        <td>{formatarDataHora(item.dataHoraUtc)}</td>
-                                        <td>{item.usuarioNome}</td>
-                                        <td>
-                                            <span className={`badge ${badgeAcao(item.acao)}`}>
-                                                {item.acao}
-                                            </span>
-                                        </td>
-                                        <td>{item.entidade}</td>
-                                        <td>{item.entidadeId ?? '-'}</td>
-                                        <td>{item.ipOrigem ?? '-'}</td>
-                                        <td>
-                                            <button
-                                                className="btn btn-outline-primary btn-sm"
-                                                onClick={() => setDetalhe(item)}
-                                            >
-                                                Ver
-                                            </button>
-                                        </td>
+                    <>
+                        <div className="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
+                            <small className="text-muted">
+                                Mostrando {inicio} até {fim} de {totalRegistros} registros.
+                            </small>
+
+                            <small className="text-muted">
+                                Página {pagina} de {totalPaginas}
+                            </small>
+                        </div>
+
+                        <div className="table-responsive">
+                            <table className="table table-sm table-striped align-middle">
+                                <thead className="table-light">
+                                    <tr>
+                                        <th>Data/Hora</th>
+                                        <th>Usuário</th>
+                                        <th>Ação</th>
+                                        <th>Entidade</th>
+                                        <th>ID Registro</th>
+                                        <th>IP</th>
+                                        <th style={{ width: 100 }}>Detalhes</th>
                                     </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
+                                </thead>
+                                <tbody>
+                                    {itens.map(item => (
+                                        <tr key={item.id}>
+                                            <td>{formatarDataHora(item.dataHoraUtc)}</td>
+                                            <td>{item.usuarioNome}</td>
+                                            <td>
+                                                <span className={`badge ${badgeAcao(item.acao)}`}>
+                                                    {item.acao}
+                                                </span>
+                                            </td>
+                                            <td>{item.entidade}</td>
+                                            <td>{item.entidadeId ?? '-'}</td>
+                                            <td>{item.ipOrigem ?? '-'}</td>
+                                            <td>
+                                                <button
+                                                    className="btn btn-outline-primary btn-sm"
+                                                    onClick={() => setDetalhe(item)}
+                                                >
+                                                    Ver
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div className="d-flex justify-content-between align-items-center mt-3 flex-wrap gap-2">
+                            <button
+                                className="btn btn-outline-secondary btn-sm"
+                                disabled={pagina <= 1 || carregando}
+                                onClick={() => carregar(pagina - 1, tamanhoPaginaLocal)}
+                            >
+                                Anterior
+                            </button>
+
+                            <div className="btn-group btn-group-sm flex-wrap">
+                                {paginasVisiveis.map((numeroPagina, index) => {
+                                    const paginaAnterior = paginasVisiveis[index - 1];
+                                    const mostrarSeparador = paginaAnterior && numeroPagina - paginaAnterior > 1;
+
+                                    return (
+                                        <React.Fragment key={numeroPagina}>
+                                            {mostrarSeparador && (
+                                                <button className="btn btn-outline-secondary" disabled>
+                                                    ...
+                                                </button>
+                                            )}
+
+                                            <button
+                                                className={`btn ${numeroPagina === pagina ? 'btn-primary' : 'btn-outline-primary'}`}
+                                                disabled={carregando}
+                                                onClick={() => carregar(numeroPagina, tamanhoPaginaLocal)}
+                                            >
+                                                {numeroPagina}
+                                            </button>
+                                        </React.Fragment>
+                                    );
+                                })}
+                            </div>
+
+                            <button
+                                className="btn btn-outline-secondary btn-sm"
+                                disabled={pagina >= totalPaginas || carregando}
+                                onClick={() => carregar(pagina + 1, tamanhoPaginaLocal)}
+                            >
+                                Próxima
+                            </button>
+                        </div>
+                    </>
                 )}
             </div>
 

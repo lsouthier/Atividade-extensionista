@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import type { AppDispatch, RootState } from '../../store';
 import {
@@ -9,6 +9,7 @@ import {
     selecionarUsuario
 } from '../../store/usuariosSlice';
 import { UsuarioSistema, UsuarioSistemaCreate, UsuarioSistemaUpdate } from '../../api/usuariosApi';
+import { Paginacao } from '../common/Paginacao';
 
 interface FormState {
     id?: number;
@@ -31,10 +32,25 @@ export const UsuariosPage: React.FC = () => {
 
     const [showModal, setShowModal] = useState(false);
     const [form, setForm] = useState<FormState>(initialForm);
+    const [pagina, setPagina] = useState(1);
+    const [tamanhoPagina, setTamanhoPagina] = useState(10);
 
     useEffect(() => {
         dispatch(carregarUsuarios());
     }, [dispatch]);
+
+    const totalPaginas = Math.max(1, Math.ceil(itens.length / tamanhoPagina));
+
+    useEffect(() => {
+        if (pagina > totalPaginas) {
+            setPagina(totalPaginas);
+        }
+    }, [pagina, totalPaginas]);
+
+    const usuariosPaginados = useMemo(() => {
+        const inicio = (pagina - 1) * tamanhoPagina;
+        return itens.slice(inicio, inicio + tamanhoPagina);
+    }, [itens, pagina, tamanhoPagina]);
 
     const abrirNovo = () => {
         dispatch(selecionarUsuario(null));
@@ -86,6 +102,7 @@ export const UsuariosPage: React.FC = () => {
 
         if (criarUsuario.fulfilled.match(result)) {
             setShowModal(false);
+            setPagina(1);
         }
     };
 
@@ -97,10 +114,15 @@ export const UsuariosPage: React.FC = () => {
         await dispatch(excluirUsuario(usuario.id));
     };
 
+    const handleMudarTamanhoPagina = (novoTamanho: number) => {
+        setTamanhoPagina(novoTamanho);
+        setPagina(1);
+    };
+
     return (
         <div className="row">
             <div className="col-12 mb-4">
-                <div className="d-flex justify-content-between align-items-center mb-2">
+                <div className="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
                     <h2 className="h4 mb-0">Gestão de Usuários</h2>
                     <button className="btn btn-primary btn-sm" onClick={abrirNovo}>
                         Novo Usuário
@@ -121,7 +143,7 @@ export const UsuariosPage: React.FC = () => {
                             </tr>
                         </thead>
                         <tbody>
-                            {itens.map(usuario => (
+                            {usuariosPaginados.map(usuario => (
                                 <tr key={usuario.id}>
                                     <td>{usuario.nomeUsuario}</td>
                                     <td>{usuario.nome}</td>
@@ -156,6 +178,16 @@ export const UsuariosPage: React.FC = () => {
 
                 {!itens.length && !carregando && (
                     <div className="alert alert-secondary">Nenhum usuário cadastrado.</div>
+                )}
+
+                {itens.length > 0 && (
+                    <Paginacao
+                        pagina={pagina}
+                        tamanhoPagina={tamanhoPagina}
+                        totalRegistros={itens.length}
+                        onMudarPagina={setPagina}
+                        onMudarTamanhoPagina={handleMudarTamanhoPagina}
+                    />
                 )}
             </div>
 

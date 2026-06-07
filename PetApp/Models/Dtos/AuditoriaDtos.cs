@@ -14,4 +14,13 @@ namespace PetApp.Models.Dtos
         public string? IpOrigem { get; set; }
         public string? UserAgent { get; set; }
     }
+
+    public class AuditoriaPaginadaDto
+    {
+        public int Pagina { get; set; }
+        public int TamanhoPagina { get; set; }
+        public int TotalRegistros { get; set; }
+        public int TotalPaginas { get; set; }
+        public List<AuditoriaReadDto> Itens { get; set; } = new();
+    }
 }

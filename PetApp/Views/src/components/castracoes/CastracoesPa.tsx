@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import type { RootState, AppDispatch } from '../../store';
 import {
@@ -12,6 +12,7 @@ import { Castracao, CastracaoCreate, CastracaoUpdate } from '../../api/castracoe
 import { CastracoesList } from './CastracoesList';
 import { CastracaoForm } from './CastracaoForm';
 import { CastracaoDeleteModal } from './CastracaoDeleteModal';
+import { Paginacao } from '../common/Paginacao';
 
 export const CastracoesPa: React.FC = () => {
     const dispatch = useDispatch<AppDispatch>();
@@ -22,10 +23,25 @@ export const CastracoesPa: React.FC = () => {
     const [modoEdicao, setModoEdicao] = useState(false);
     const [idParaExcluir, setIdParaExcluir] = useState<number | null>(null);
     const [showFormModal, setShowFormModal] = useState(false);
+    const [pagina, setPagina] = useState(1);
+    const [tamanhoPagina, setTamanhoPagina] = useState(10);
 
     useEffect(() => {
         dispatch(carregarCastracoes());
     }, [dispatch]);
+
+    const totalPaginas = Math.max(1, Math.ceil(itens.length / tamanhoPagina));
+
+    useEffect(() => {
+        if (pagina > totalPaginas) {
+            setPagina(totalPaginas);
+        }
+    }, [pagina, totalPaginas]);
+
+    const castracoesPaginadas = useMemo(() => {
+        const inicio = (pagina - 1) * tamanhoPagina;
+        return itens.slice(inicio, inicio + tamanhoPagina);
+    }, [itens, pagina, tamanhoPagina]);
 
     const handleNovo = () => {
         dispatch(selecionarCastracao(null));
@@ -44,7 +60,9 @@ export const CastracoesPa: React.FC = () => {
             await dispatch(atualizarCastracao(dados as CastracaoUpdate));
         } else {
             await dispatch(criarCastracao(dados as CastracaoCreate));
+            setPagina(1);
         }
+
         setShowFormModal(false);
     };
 
@@ -59,10 +77,15 @@ export const CastracoesPa: React.FC = () => {
         }
     };
 
+    const handleMudarTamanhoPagina = (novoTamanho: number) => {
+        setTamanhoPagina(novoTamanho);
+        setPagina(1);
+    };
+
     return (
         <div className="row">
             <div className="col-12 mb-4">
-                <div className="d-flex justify-content-between align-items-center mb-2">
+                <div className="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
                     <h2 className="h4 mb-0">Lista de Castrações</h2>
                     <button className="btn btn-primary btn-sm" onClick={handleNovo}>
                         Nova Castração
@@ -73,10 +96,20 @@ export const CastracoesPa: React.FC = () => {
                 {erro && <div className="alert alert-danger">{erro}</div>}
 
                 <CastracoesList
-                    castracoes={itens}
+                    castracoes={castracoesPaginadas}
                     onEditar={handleEditar}
                     onExcluir={(id) => setIdParaExcluir(id)}
                 />
+
+                {itens.length > 0 && (
+                    <Paginacao
+                        pagina={pagina}
+                        tamanhoPagina={tamanhoPagina}
+                        totalRegistros={itens.length}
+                        onMudarPagina={setPagina}
+                        onMudarTamanhoPagina={handleMudarTamanhoPagina}
+                    />
+                )}
             </div>
 
             {showFormModal && (
@@ -90,7 +123,7 @@ export const CastracoesPa: React.FC = () => {
                                 <button type="button" className="btn-close" onClick={handleCancelar}></button>
                             </div>
                             <div className="modal-body">
-                                <CastracaoForm 
+                                <CastracaoForm
                                     castracao={selecionado || undefined}
                                     onSubmit={handleSalvar}
                                     onCancel={handleCancelar}

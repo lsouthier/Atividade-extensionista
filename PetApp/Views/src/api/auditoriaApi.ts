@@ -15,18 +15,26 @@ export interface Auditoria {
 }
 
 export interface AuditoriaFiltros {
-    limite?: number;
+    pagina?: number;
+    tamanhoPagina?: number;
     entidade?: string;
     acao?: string;
     usuario?: string;
 }
 
-export async function getAuditorias(filtros: AuditoriaFiltros = {}): Promise<Auditoria[]> {
+export interface AuditoriaPaginada {
+    pagina: number;
+    tamanhoPagina: number;
+    totalRegistros: number;
+    totalPaginas: number;
+    itens: Auditoria[];
+}
+
+export async function getAuditorias(filtros: AuditoriaFiltros = {}): Promise<AuditoriaPaginada> {
     const params = new URLSearchParams();
 
-    if (filtros.limite) {
-        params.append('limite', String(filtros.limite));
-    }
+    params.append('pagina', String(filtros.pagina ?? 1));
+    params.append('tamanhoPagina', String(filtros.tamanhoPagina ?? 25));
 
     if (filtros.entidade) {
         params.append('entidade', filtros.entidade);
@@ -40,10 +48,8 @@ export async function getAuditorias(filtros: AuditoriaFiltros = {}): Promise<Aud
         params.append('usuario', filtros.usuario);
     }
 
-    const query = params.toString();
-
-    const response = await axiosClient.get<Auditoria[]>(
-        query ? `Auditoria?${query}` : 'Auditoria'
+    const response = await axiosClient.get<AuditoriaPaginada>(
+        `Auditoria?${params.toString()}`
     );
 
     return response.data;

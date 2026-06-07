@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import type { RootState, AppDispatch } from '../../store';
 import {
@@ -12,6 +12,7 @@ import { Clinica, ClinicaCreate, ClinicaUpdate } from '../../api/clinicasApi';
 import { ClinicasList } from './ClinicasList';
 import { ClinicaForm } from './ClinicaForm';
 import { ClinicaDeleteModal } from './ClinicaDeleteModal';
+import { Paginacao } from '../common/Paginacao';
 
 export const ClinicasPage: React.FC = () => {
     const dispatch = useDispatch<AppDispatch>();
@@ -22,10 +23,25 @@ export const ClinicasPage: React.FC = () => {
     const [modoEdicao, setModoEdicao] = useState(false);
     const [idParaExcluir, setIdParaExcluir] = useState<number | null>(null);
     const [showFormModal, setShowFormModal] = useState(false);
+    const [pagina, setPagina] = useState(1);
+    const [tamanhoPagina, setTamanhoPagina] = useState(10);
 
     useEffect(() => {
         dispatch(carregarClinicas());
     }, [dispatch]);
+
+    const totalPaginas = Math.max(1, Math.ceil(itens.length / tamanhoPagina));
+
+    useEffect(() => {
+        if (pagina > totalPaginas) {
+            setPagina(totalPaginas);
+        }
+    }, [pagina, totalPaginas]);
+
+    const clinicasPaginadas = useMemo(() => {
+        const inicio = (pagina - 1) * tamanhoPagina;
+        return itens.slice(inicio, inicio + tamanhoPagina);
+    }, [itens, pagina, tamanhoPagina]);
 
     const handleNovo = () => {
         dispatch(selecionarClinica(null));
@@ -44,7 +60,9 @@ export const ClinicasPage: React.FC = () => {
             await dispatch(atualizarClinica(dados as ClinicaUpdate));
         } else {
             await dispatch(criarClinica(dados as ClinicaCreate));
+            setPagina(1);
         }
+
         setShowFormModal(false);
     };
 
@@ -55,10 +73,15 @@ export const ClinicasPage: React.FC = () => {
         }
     };
 
+    const handleMudarTamanhoPagina = (novoTamanho: number) => {
+        setTamanhoPagina(novoTamanho);
+        setPagina(1);
+    };
+
     return (
         <div className="row">
             <div className="col-12 mb-4">
-                <div className="d-flex justify-content-between align-items-center mb-2">
+                <div className="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
                     <h2 className="h4 mb-0">Lista de Clínicas</h2>
                     <button className="btn btn-primary btn-sm" onClick={handleNovo}>
                         Nova Clínica
@@ -69,10 +92,20 @@ export const ClinicasPage: React.FC = () => {
                 {erro && <div className="alert alert-danger">{erro}</div>}
 
                 <ClinicasList
-                    clinicas={itens}
+                    clinicas={clinicasPaginadas}
                     onEditar={handleEditar}
                     onExcluir={(id) => setIdParaExcluir(id)}
                 />
+
+                {itens.length > 0 && (
+                    <Paginacao
+                        pagina={pagina}
+                        tamanhoPagina={tamanhoPagina}
+                        totalRegistros={itens.length}
+                        onMudarPagina={setPagina}
+                        onMudarTamanhoPagina={handleMudarTamanhoPagina}
+                    />
+                )}
             </div>
 
             {showFormModal && (

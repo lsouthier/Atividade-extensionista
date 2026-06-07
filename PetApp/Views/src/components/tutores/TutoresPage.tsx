@@ -13,6 +13,7 @@ import { Tutor, TutorCreate, TutorUpdate } from '../../api/tutoresApi';
 import { TutoresList } from './TutoresList';
 import { TutorForm } from './TutorForm';
 import { TutorDeleteModal } from './TutorDeleteModal';
+import { Paginacao } from '../common/Paginacao';
 
 export const TutoresPage: React.FC = () => {
     const dispatch = useDispatch<AppDispatch>();
@@ -22,10 +23,25 @@ export const TutoresPage: React.FC = () => {
 
     const [modoEdicao, setModoEdicao] = useState(false);
     const [showFormModal, setShowFormModal] = useState(false);
+    const [pagina, setPagina] = useState(1);
+    const [tamanhoPagina, setTamanhoPagina] = useState(10);
 
     useEffect(() => {
         dispatch(carregarTutores());
     }, [dispatch]);
+
+    const totalPaginas = Math.max(1, Math.ceil(itens.length / tamanhoPagina));
+
+    useEffect(() => {
+        if (pagina > totalPaginas) {
+            setPagina(totalPaginas);
+        }
+    }, [pagina, totalPaginas]);
+
+    const tutoresPaginados = useMemo(() => {
+        const inicio = (pagina - 1) * tamanhoPagina;
+        return itens.slice(inicio, inicio + tamanhoPagina);
+    }, [itens, pagina, tamanhoPagina]);
 
     const tutorConfirmacao = useMemo(() => {
         if (!confirmacaoExclusao) {
@@ -62,6 +78,7 @@ export const TutoresPage: React.FC = () => {
 
         if (criarTutor.fulfilled.match(result)) {
             setShowFormModal(false);
+            setPagina(1);
         }
     };
 
@@ -84,10 +101,15 @@ export const TutoresPage: React.FC = () => {
         dispatch(limparConfirmacaoExclusao());
     };
 
+    const handleMudarTamanhoPagina = (novoTamanho: number) => {
+        setTamanhoPagina(novoTamanho);
+        setPagina(1);
+    };
+
     return (
         <div className="row">
             <div className="col-12 mb-4">
-                <div className="d-flex justify-content-between align-items-center mb-2">
+                <div className="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
                     <h2 className="h4 mb-0">Lista de Tutores</h2>
                     <button className="btn btn-primary btn-sm" onClick={handleNovo}>
                         Novo Tutor
@@ -98,10 +120,20 @@ export const TutoresPage: React.FC = () => {
                 {erro && <div className="alert alert-danger">{erro}</div>}
 
                 <TutoresList
-                    tutores={itens}
+                    tutores={tutoresPaginados}
                     onEditar={handleEditar}
                     onExcluir={handleSolicitarExcluir}
                 />
+
+                {itens.length > 0 && (
+                    <Paginacao
+                        pagina={pagina}
+                        tamanhoPagina={tamanhoPagina}
+                        totalRegistros={itens.length}
+                        onMudarPagina={setPagina}
+                        onMudarTamanhoPagina={handleMudarTamanhoPagina}
+                    />
+                )}
             </div>
 
             {showFormModal && (

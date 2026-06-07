@@ -17,15 +17,26 @@ namespace PetApp.Controllers
         }
 
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<AuditoriaReadDto>>> GetAuditorias(
-            [FromQuery] int limite = 200,
+        public async Task<ActionResult<AuditoriaPaginadaDto>> GetAuditorias(
+            [FromQuery] int pagina = 1,
+            [FromQuery] int tamanhoPagina = 25,
             [FromQuery] string? entidade = null,
             [FromQuery] string? acao = null,
             [FromQuery] string? usuario = null)
         {
-            if (limite <= 0 || limite > 1000)
+            if (pagina <= 0)
             {
-                limite = 200;
+                pagina = 1;
+            }
+
+            if (tamanhoPagina <= 0)
+            {
+                tamanhoPagina = 25;
+            }
+
+            if (tamanhoPagina > 100)
+            {
+                tamanhoPagina = 100;
             }
 
             var query = _context.AuditoriasSistema
@@ -47,9 +58,22 @@ namespace PetApp.Controllers
                 query = query.Where(a => a.UsuarioNome.Contains(usuario));
             }
 
-            var auditorias = await query
+            var totalRegistros = await query.CountAsync();
+
+            var totalPaginas = totalRegistros == 0
+                ? 1
+                : (int)Math.Ceiling(totalRegistros / (double)tamanhoPagina);
+
+            if (pagina > totalPaginas)
+            {
+                pagina = totalPaginas;
+            }
+
+            var itens = await query
                 .OrderByDescending(a => a.DataHoraUtc)
-                .Take(limite)
+                .ThenByDescending(a => a.Id)
+                .Skip((pagina - 1) * tamanhoPagina)
+                .Take(tamanhoPagina)
                 .Select(a => new AuditoriaReadDto
                 {
                     Id = a.Id,
@@ -66,7 +90,14 @@ namespace PetApp.Controllers
                 })
                 .ToListAsync();
 
-            return Ok(auditorias);
+            return Ok(new AuditoriaPaginadaDto
+            {
+                Pagina = pagina,
+                TamanhoPagina = tamanhoPagina,
+                TotalRegistros = totalRegistros,
+                TotalPaginas = totalPaginas,
+                Itens = itens
+            });
         }
 
         [HttpGet("{id:int}")]
@@ -94,6 +125,21 @@ namespace PetApp.Controllers
                 ValoresDepois = auditoria.ValoresDepois,
                 IpOrigem = auditoria.IpOrigem,
                 UserAgent = auditoria.UserAgent
+            });
+        }
+
+        [HttpGet("debug-ip")]
+        public IActionResult DebugIp()
+        {
+            return Ok(new
+            {
+                RemoteIpAddress = HttpContext.Connection.RemoteIpAddress?.ToString(),
+                XRealIp = HttpContext.Request.Headers["X-Real-IP"].ToString(),
+                XForwardedFor = HttpContext.Request.Headers["X-Forwarded-For"].ToString(),
+                XForwardedProto = HttpContext.Request.Headers["X-Forwarded-Proto"].ToString(),
+                XForwardedHost = HttpContext.Request.Headers["X-Forwarded-Host"].ToString(),
+                CfConnectingIp = HttpContext.Request.Headers["CF-Connecting-IP"].ToString(),
+                UserAgent = HttpContext.Request.Headers.UserAgent.ToString()
             });
         }
     }

@@ -1,46 +1,47 @@
-# Sistema
-.DS_Store
-Thumbs.db
-
-# Visual Studio / VS Code
+# .NET
+bin/
+obj/
 .vs/
-.vscode/
 *.user
 *.suo
 *.rsuser
-*.lscache
 
-# .NET
-**/bin/
-**/obj/
-TestResults/
-*.nupkg
-
-# Node / Vite
-**/node_modules/
-**/dist/
-**/build/
-.npm/
-.yarn/
-
-# Docker / ambiente
-.env
-.env.*
-!.env.example
+# Node/Vite
+node_modules/
+dist/
+build/
+.vite/
 
 # Logs
 *.log
-logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
 
-# Temporários
-tmp/
-temp/
+# OS/editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
 
-# Secrets locais
+# Environment/secrets
+.env
+.env.*
 appsettings.Local.json
-appsettings.Development.local.json
-appsettings.Production.local.json
+appsettings.*.Local.json
 
-# NuGet local cache
-.nuget/
-**/.nuget/
+# Docker local
+docker-compose.override.yml
+
+# Certificates
+*.pem
+*.key
+*.crt
+*.pfx
+*.p12
+
+# Database dumps/backups
+*.sql
+*.dump
+*.backup
+*.bak
