@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Animal } from '../../api/animaisApi';
 import { Castracao } from '../../api/castracoeApi';
 import { axiosClient } from '../../api/axiosClient';
@@ -17,29 +17,88 @@ interface FormState {
     observacoes: string;
 }
 
+const obterDataAtualIso = (): string => {
+    const hoje = new Date();
+    const ano = hoje.getFullYear();
+    const mes = String(hoje.getMonth() + 1).padStart(2, '0');
+    const dia = String(hoje.getDate()).padStart(2, '0');
+
+    return `${ano}-${mes}-${dia}`;
+};
+
+const aplicarMascaraDataBr = (valor: string): string => {
+    const numeros = valor.replace(/\D/g, '').slice(0, 8);
+
+    if (numeros.length <= 2) {
+        return numeros;
+    }
+
+    if (numeros.length <= 4) {
+        return `${numeros.slice(0, 2)}/${numeros.slice(2)}`;
+    }
+
+    return `${numeros.slice(0, 2)}/${numeros.slice(2, 4)}/${numeros.slice(4)}`;
+};
+
+const formatarIsoParaBr = (dataIso: string): string => {
+    if (!dataIso) {
+        return '';
+    }
+
+    const somenteData = dataIso.split('T')[0];
+    const [ano, mes, dia] = somenteData.split('-');
+
+    if (!ano || !mes || !dia) {
+        return '';
+    }
+
+    return `${dia}/${mes}/${ano}`;
+};
+
+const converterBrParaIso = (dataBr: string): string => {
+    const match = dataBr.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+
+    if (!match) {
+        return '';
+    }
+
+    const [, dia, mes, ano] = match;
+
+    const data = new Date(Number(ano), Number(mes) - 1, Number(dia));
+
+    const dataValida =
+        data.getFullYear() === Number(ano) &&
+        data.getMonth() === Number(mes) - 1 &&
+        data.getDate() === Number(dia);
+
+    if (!dataValida) {
+        return '';
+    }
+
+    return `${ano}-${mes}-${dia}`;
+};
+
+const normalizarDataApiParaIso = (data: string | undefined): string => {
+    if (!data) {
+        return obterDataAtualIso();
+    }
+
+    const somenteData = data.split('T')[0];
+    const [ano, mes, dia] = somenteData.split('-');
+
+    if (!ano || !mes || !dia) {
+        return obterDataAtualIso();
+    }
+
+    return `${ano}-${mes}-${dia}`;
+};
+
 const initialForm: FormState = {
-    dataCastracao: new Date().toISOString().split('T')[0],
+    dataCastracao: obterDataAtualIso(),
     valor: '',
     idAnimal: 0,
     idClinica: 0,
     observacoes: ''
-};
-
-const formatarDataParaInput = (data: string | undefined): string => {
-    if (!data) {
-        return new Date().toISOString().split('T')[0];
-    }
-
-    try {
-        const date = new Date(data);
-        const ano = date.getUTCFullYear();
-        const mes = String(date.getUTCMonth() + 1).padStart(2, '0');
-        const dia = String(date.getUTCDate()).padStart(2, '0');
-
-        return `${ano}-${mes}-${dia}`;
-    } catch {
-        return new Date().toISOString().split('T')[0];
-    }
 };
 
 const extrairMensagemErro = (error: any): string => {
@@ -90,11 +149,13 @@ const extrairMensagemErro = (error: any): string => {
 
 export const CastracaoForm: React.FC<CastracaoFormProps> = ({ onSubmit, onCancel, castracao }) => {
     const [form, setForm] = useState<FormState>(initialForm);
+    const [dataCastracaoBr, setDataCastracaoBr] = useState(formatarIsoParaBr(initialForm.dataCastracao));
     const [animaisNaoCastrados, setAnimaisNaoCastrados] = useState<Animal[]>([]);
     const [clinicas, setClinicas] = useState<any[]>([]);
     const [carregando, setCarregando] = useState(true);
     const [salvando, setSalvando] = useState(false);
     const [erro, setErro] = useState<string | undefined>();
+    const dataPickerRef = useRef<HTMLInputElement>(null);
 
     const modoEdicao = Boolean(castracao?.id);
 
@@ -123,16 +184,22 @@ export const CastracaoForm: React.FC<CastracaoFormProps> = ({ onSubmit, onCancel
 
     useEffect(() => {
         if (castracao) {
+            const dataIso = normalizarDataApiParaIso(castracao.dataCastracao);
+
             setForm({
-                dataCastracao: formatarDataParaInput(castracao.dataCastracao),
+                dataCastracao: dataIso,
                 valor: castracao.valor,
                 idAnimal: castracao.idAnimal,
                 idClinica: castracao.idClinica,
                 observacoes: castracao.observacoes || ''
             });
-        } else {
-            setForm(initialForm);
+
+            setDataCastracaoBr(formatarIsoParaBr(dataIso));
+            return;
         }
+
+        setForm(initialForm);
+        setDataCastracaoBr(formatarIsoParaBr(initialForm.dataCastracao));
     }, [castracao]);
 
     const animaisDisponiveis = useMemo(() => {
@@ -161,12 +228,52 @@ export const CastracaoForm: React.FC<CastracaoFormProps> = ({ onSubmit, onCancel
         }));
     };
 
+    const handleDataBrChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const valorBr = aplicarMascaraDataBr(e.target.value);
+        const valorIso = converterBrParaIso(valorBr);
+
+        setDataCastracaoBr(valorBr);
+
+        setForm(prev => ({
+            ...prev,
+            dataCastracao: valorIso
+        }));
+    };
+
+    const handleDataPickerChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const valorIso = e.target.value;
+
+        setForm(prev => ({
+            ...prev,
+            dataCastracao: valorIso
+        }));
+
+        setDataCastracaoBr(formatarIsoParaBr(valorIso));
+    };
+
+    const abrirCalendario = () => {
+        const picker = dataPickerRef.current as HTMLInputElement & {
+            showPicker?: () => void;
+        };
+
+        if (!picker) {
+            return;
+        }
+
+        if (typeof picker.showPicker === 'function') {
+            picker.showPicker();
+            return;
+        }
+
+        picker.click();
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setErro(undefined);
 
-        if (!form.dataCastracao) {
-            setErro('Data da castração é obrigatória.');
+        if (!dataCastracaoBr || !form.dataCastracao) {
+            setErro('Data da castração é obrigatória e deve estar no formato dd/mm/aaaa.');
             return;
         }
 
@@ -190,7 +297,7 @@ export const CastracaoForm: React.FC<CastracaoFormProps> = ({ onSubmit, onCancel
 
             const payload = {
                 ...(modoEdicao ? { id: castracao!.id } : {}),
-                dataCastracao: `${form.dataCastracao}T00:00:00Z`,
+                dataCastracao: `${form.dataCastracao}T00:00:00`,
                 valor: Number(form.valor),
                 idAnimal: form.idAnimal,
                 idClinica: form.idClinica,
@@ -201,6 +308,7 @@ export const CastracaoForm: React.FC<CastracaoFormProps> = ({ onSubmit, onCancel
 
             if (!modoEdicao) {
                 setForm(initialForm);
+                setDataCastracaoBr(formatarIsoParaBr(initialForm.dataCastracao));
             }
         } catch (error) {
             setErro(extrairMensagemErro(error));
@@ -228,14 +336,45 @@ export const CastracaoForm: React.FC<CastracaoFormProps> = ({ onSubmit, onCancel
 
                 <div className="mb-2">
                     <label className="form-label">Data da Castração *</label>
-                    <input
-                        type="date"
-                        name="dataCastracao"
-                        className="form-control form-control-sm"
-                        value={form.dataCastracao}
-                        onChange={handleChange}
-                        required
-                    />
+                    <div className="input-group input-group-sm">
+                        <input
+                            type="text"
+                            name="dataCastracaoBr"
+                            className="form-control"
+                            value={dataCastracaoBr}
+                            onChange={handleDataBrChange}
+                            placeholder="dd/mm/aaaa"
+                            inputMode="numeric"
+                            maxLength={10}
+                            required
+                        />
+                        <button
+                            type="button"
+                            className="btn btn-outline-secondary"
+                            onClick={abrirCalendario}
+                            title="Selecionar data"
+                        >
+                            📅
+                        </button>
+                        <input
+                            ref={dataPickerRef}
+                            type="date"
+                            value={form.dataCastracao}
+                            onChange={handleDataPickerChange}
+                            style={{
+                                position: 'absolute',
+                                width: 1,
+                                height: 1,
+                                opacity: 0,
+                                pointerEvents: 'none'
+                            }}
+                            tabIndex={-1}
+                            aria-hidden="true"
+                        />
+                    </div>
+                    <small className="form-text text-muted">
+                        Formato exibido: dd/mm/aaaa. Valor enviado internamente: yyyy-mm-dd.
+                    </small>
                 </div>
 
                 <div className="mb-2">
