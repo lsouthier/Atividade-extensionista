@@ -1,8 +1,10 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import type { RootState, AppDispatch } from '../../store';
-import { carregarTutores } from '../../store/tutoresSlice';
+import { carregarTutores, criarTutor } from '../../store/tutoresSlice';
 import { Animal, AnimalCreate, AnimalUpdate } from '../../api/animaisApi';
+import { TutorCreate } from '../../api/tutoresApi';
+import { TutorForm } from '../tutores/TutorForm';
 
 interface AnimalFormProps {
     animal?: Animal;
@@ -209,6 +211,9 @@ export const AnimalForm: React.FC<AnimalFormProps> = ({ animal, onSubmit, onCanc
     const [form, setForm] = useState<FormState>(initialForm);
     const [salvando, setSalvando] = useState(false);
     const [erro, setErro] = useState<string | undefined>();
+    const [showTutorModal, setShowTutorModal] = useState(false);
+    const [salvandoTutor, setSalvandoTutor] = useState(false);
+    const [erroTutor, setErroTutor] = useState<string | undefined>();
     const dataPickerRef = useRef<HTMLInputElement>(null);
 
     const idadeCalculada = useMemo(
@@ -306,6 +311,38 @@ export const AnimalForm: React.FC<AnimalFormProps> = ({ animal, onSubmit, onCanc
         picker.click();
     };
 
+    const handleCriarTutor = async (dados: TutorCreate) => {
+        setErroTutor(undefined);
+
+        try {
+            setSalvandoTutor(true);
+
+            const result = await dispatch(criarTutor(dados));
+
+            if (criarTutor.fulfilled.match(result)) {
+                const novoTutor = result.payload;
+
+                setForm(prev => ({
+                    ...prev,
+                    idTutor: novoTutor.id
+                }));
+
+                setShowTutorModal(false);
+                await dispatch(carregarTutores());
+                return;
+            }
+
+            const payload: any = result.payload;
+            setErroTutor(
+                typeof payload === 'string'
+                    ? payload
+                    : payload?.erro ?? 'Erro ao criar tutor.'
+            );
+        } finally {
+            setSalvandoTutor(false);
+        }
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setErro(undefined);
@@ -390,190 +427,224 @@ export const AnimalForm: React.FC<AnimalFormProps> = ({ animal, onSubmit, onCanc
         return <div className="alert alert-info">Carregando tutores...</div>;
     }
 
-    if (tutores.length === 0) {
-        return (
-            <div className="alert alert-warning">
-                Nenhum tutor disponível. Crie um tutor antes de adicionar um animal.
-            </div>
-        );
-    }
-
     return (
-        <form onSubmit={handleSubmit} className="card">
-            <div className="card-body">
-                {erro && <div className="alert alert-danger">{erro}</div>}
+        <>
+            <form onSubmit={handleSubmit} className="card">
+                <div className="card-body">
+                    {erro && <div className="alert alert-danger">{erro}</div>}
 
-                <div className="mb-2">
-                    <label className="form-label">Nome *</label>
-                    <input
-                        type="text"
-                        name="nome"
-                        className="form-control form-control-sm"
-                        value={form.nome}
-                        onChange={handleChange}
-                        maxLength={200}
-                        required
-                    />
-                </div>
-
-                <div className="mb-2">
-                    <label className="form-label">Espécie *</label>
-                    <select
-                        name="especie"
-                        className="form-select form-select-sm"
-                        value={form.especie}
-                        onChange={handleChange}
-                        required
-                    >
-                        <option value="">Selecione...</option>
-                        <option value="Felina">Felina</option>
-                        <option value="Canina">Canina</option>
-                        <option value="Outros">Outros</option>
-                    </select>
-                </div>
-
-                <div className="mb-2">
-                    <label className="form-label">Raça *</label>
-                    <input
-                        type="text"
-                        name="raca"
-                        className="form-control form-control-sm"
-                        value={form.raca}
-                        onChange={handleChange}
-                        maxLength={100}
-                        required
-                    />
-                </div>
-
-                <div className="mb-2">
-                    <label className="form-label">Sexo *</label>
-                    <select
-                        name="sexo"
-                        className="form-select form-select-sm"
-                        value={form.sexo}
-                        onChange={handleChange}
-                        required
-                    >
-                        <option value="">Selecione...</option>
-                        <option value="M">Macho</option>
-                        <option value="F">Fêmea</option>
-                    </select>
-                </div>
-
-                <div className="mb-2 form-check">
-                    <input
-                        type="checkbox"
-                        name="ehCastrado"
-                        className="form-check-input"
-                        id="ehCastradoCheck"
-                        checked={form.ehCastrado}
-                        onChange={handleChange}
-                    />
-                    <label className="form-check-label" htmlFor="ehCastradoCheck">
-                        É Castrado?
-                    </label>
-                </div>
-
-                <div className="row">
-                    <div className="col-md-4 mb-2">
-                        <label className="form-label">Data de nascimento</label>
-                        <div className="input-group input-group-sm">
-                            <input
-                                type="text"
-                                name="dataNascimentoBr"
-                                className="form-control"
-                                value={form.dataNascimentoBr}
-                                onChange={handleDataNascimentoBrChange}
-                                placeholder="dd/mm/aaaa"
-                                inputMode="numeric"
-                                maxLength={10}
-                            />
-                            <button
-                                type="button"
-                                className="btn btn-outline-secondary"
-                                onClick={abrirCalendario}
-                                title="Selecionar data"
-                            >
-                                📅
-                            </button>
-                            <input
-                                ref={dataPickerRef}
-                                type="date"
-                                value={form.dataNascimentoIso}
-                                onChange={handleDataPickerChange}
-                                max={obterDataAtualIso()}
-                                style={{
-                                    position: 'absolute',
-                                    width: 1,
-                                    height: 1,
-                                    opacity: 0,
-                                    pointerEvents: 'none'
-                                }}
-                                tabIndex={-1}
-                                aria-hidden="true"
-                            />
-                        </div>
-                        <small className="form-text text-muted">
-                            Idade calculada: {idadeCalculada.descricao}
-                        </small>
-                    </div>
-
-                    <div className="col-md-4 mb-2">
-                        <label className="form-label">Peso (kg)</label>
+                    <div className="mb-2">
+                        <label className="form-label">Nome *</label>
                         <input
-                            type="number"
-                            name="peso"
+                            type="text"
+                            name="nome"
                             className="form-control form-control-sm"
-                            value={form.peso}
+                            value={form.nome}
                             onChange={handleChange}
-                            min={0}
-                            max={1000}
-                            step="0.1"
+                            maxLength={200}
+                            required
                         />
                     </div>
 
-                    <div className="col-md-4 mb-2">
-                        <label className="form-label">Tutor *</label>
+                    <div className="mb-2">
+                        <label className="form-label">Espécie *</label>
                         <select
-                            name="idTutor"
+                            name="especie"
                             className="form-select form-select-sm"
-                            value={form.idTutor || 0}
+                            value={form.especie}
                             onChange={handleChange}
                             required
                         >
-                            <option value={0}>Selecione um tutor...</option>
-                            {tutores.map(tutor => (
-                                <option key={tutor.id} value={tutor.id}>
-                                    {tutor.nome}
-                                </option>
-                            ))}
+                            <option value="">Selecione...</option>
+                            <option value="Felina">Felina</option>
+                            <option value="Canina">Canina</option>
+                            <option value="Outros">Outros</option>
                         </select>
-                        <small className="form-text text-muted">
-                            Tutores disponíveis: {tutores.length}
-                        </small>
+                    </div>
+
+                    <div className="mb-2">
+                        <label className="form-label">Raça *</label>
+                        <input
+                            type="text"
+                            name="raca"
+                            className="form-control form-control-sm"
+                            value={form.raca}
+                            onChange={handleChange}
+                            maxLength={100}
+                            required
+                        />
+                    </div>
+
+                    <div className="mb-2">
+                        <label className="form-label">Sexo *</label>
+                        <select
+                            name="sexo"
+                            className="form-select form-select-sm"
+                            value={form.sexo}
+                            onChange={handleChange}
+                            required
+                        >
+                            <option value="">Selecione...</option>
+                            <option value="M">Macho</option>
+                            <option value="F">Fêmea</option>
+                        </select>
+                    </div>
+
+                    <div className="mb-2 form-check">
+                        <input
+                            type="checkbox"
+                            name="ehCastrado"
+                            className="form-check-input"
+                            id="ehCastradoCheck"
+                            checked={form.ehCastrado}
+                            onChange={handleChange}
+                        />
+                        <label className="form-check-label" htmlFor="ehCastradoCheck">
+                            É Castrado?
+                        </label>
+                    </div>
+
+                    <div className="row">
+                        <div className="col-md-4 mb-2">
+                            <label className="form-label">Data de nascimento</label>
+                            <div className="input-group input-group-sm">
+                                <input
+                                    type="text"
+                                    name="dataNascimentoBr"
+                                    className="form-control"
+                                    value={form.dataNascimentoBr}
+                                    onChange={handleDataNascimentoBrChange}
+                                    placeholder="dd/mm/aaaa"
+                                    inputMode="numeric"
+                                    maxLength={10}
+                                />
+                                <button
+                                    type="button"
+                                    className="btn btn-outline-secondary"
+                                    onClick={abrirCalendario}
+                                    title="Selecionar data"
+                                >
+                                    📅
+                                </button>
+                                <input
+                                    ref={dataPickerRef}
+                                    type="date"
+                                    value={form.dataNascimentoIso}
+                                    onChange={handleDataPickerChange}
+                                    max={obterDataAtualIso()}
+                                    style={{
+                                        position: 'absolute',
+                                        width: 1,
+                                        height: 1,
+                                        opacity: 0,
+                                        pointerEvents: 'none'
+                                    }}
+                                    tabIndex={-1}
+                                    aria-hidden="true"
+                                />
+                            </div>
+                            <small className="form-text text-muted">
+                                Idade calculada: {idadeCalculada.descricao}
+                            </small>
+                        </div>
+
+                        <div className="col-md-4 mb-2">
+                            <label className="form-label">Peso (kg)</label>
+                            <input
+                                type="number"
+                                name="peso"
+                                className="form-control form-control-sm"
+                                value={form.peso}
+                                onChange={handleChange}
+                                min={0}
+                                max={1000}
+                                step="0.1"
+                            />
+                        </div>
+
+                        <div className="col-md-4 mb-2">
+                            <div className="d-flex justify-content-between align-items-center">
+                                <label className="form-label mb-0">Tutor *</label>
+                                <button
+                                    type="button"
+                                    className="btn btn-outline-primary btn-sm py-0"
+                                    onClick={() => {
+                                        setErroTutor(undefined);
+                                        setShowTutorModal(true);
+                                    }}
+                                    disabled={salvando}
+                                >
+                                    + Novo tutor
+                                </button>
+                            </div>
+
+                            <select
+                                name="idTutor"
+                                className="form-select form-select-sm mt-1"
+                                value={form.idTutor || 0}
+                                onChange={handleChange}
+                                required
+                            >
+                                <option value={0}>Selecione um tutor...</option>
+                                {tutores.map(tutor => (
+                                    <option key={tutor.id} value={tutor.id}>
+                                        {tutor.nome}
+                                    </option>
+                                ))}
+                            </select>
+                            <small className="form-text text-muted">
+                                Tutores disponíveis: {tutores.length}
+                            </small>
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            <div className="card-footer d-flex justify-content-end gap-2">
-                {onCancel && (
+                <div className="card-footer d-flex justify-content-end gap-2">
+                    {onCancel && (
+                        <button
+                            type="button"
+                            className="btn btn-secondary btn-sm"
+                            onClick={onCancel}
+                            disabled={salvando}
+                        >
+                            Cancelar
+                        </button>
+                    )}
                     <button
-                        type="button"
-                        className="btn btn-secondary btn-sm"
-                        onClick={onCancel}
-                        disabled={salvando}
+                        className="btn btn-primary btn-sm"
+                        type="submit"
+                        disabled={salvando || tutores.length === 0}
                     >
-                        Cancelar
+                        {salvando ? 'Salvando...' : 'Salvar'}
                     </button>
-                )}
-                <button
-                    className="btn btn-primary btn-sm"
-                    type="submit"
-                    disabled={salvando || tutores.length === 0}
-                >
-                    {salvando ? 'Salvando...' : 'Salvar'}
-                </button>
-            </div>
-        </form>
+                </div>
+            </form>
+
+            {showTutorModal && (
+                <div className="modal d-block" style={{ backgroundColor: 'rgba(0,0,0,0.65)', zIndex: 1060 }}>
+                    <div className="modal-dialog modal-lg">
+                        <div className="modal-content">
+                            <div className="modal-header">
+                                <h5 className="modal-title">Novo Tutor</h5>
+                                <button
+                                    type="button"
+                                    className="btn-close"
+                                    onClick={() => setShowTutorModal(false)}
+                                    disabled={salvandoTutor}
+                                ></button>
+                            </div>
+                            <div className="modal-body">
+                                {erroTutor && <div className="alert alert-danger">{erroTutor}</div>}
+
+                                <TutorForm
+                                    onSubmit={handleCriarTutor}
+                                    onCancel={() => setShowTutorModal(false)}
+                                />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </>
     );
 };
