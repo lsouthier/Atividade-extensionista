@@ -212,14 +212,14 @@ export const AnimaisPage: React.FC = () => {
             <div className="col-12 mb-4">
                 <div className="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
                     <div>
-                        <h2 className="h4 mb-0">Lista de Animais</h2>
+                        <h2 className="h4 mb-0">Lista de Pets</h2>
                         <small className="text-muted">
-                            {animaisFiltradosOrdenados.length} de {itens.length} animais exibidos.
+                            {animaisFiltradosOrdenados.length} de {itens.length} pets exibidos.
                         </small>
                     </div>
 
                     <button className="btn btn-primary btn-sm" onClick={handleNovo}>
-                        Novo Animal
+                        Novo Pet
                     </button>
                 </div>
 
@@ -305,7 +305,7 @@ export const AnimaisPage: React.FC = () => {
                         <div className="modal-content">
                             <div className="modal-header">
                                 <h5 className="modal-title">
-                                    {modoEdicao && selecionado ? 'Editar Animal' : 'Novo Animal'}
+                                    {modoEdicao && selecionado ? 'Editar Pet' : 'Novo Pet'}
                                 </h5>
                                 <button
                                     type="button"

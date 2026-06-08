@@ -122,7 +122,7 @@ export const App: React.FC = () => {
                         <div className={`petapp-menu ${menuAberto ? 'aberto' : ''}`}>
                             <div className="petapp-menu-links">
                                 <a className={`petapp-menu-link ${paginaAtual === 'animais' ? 'active fw-bold' : ''}`} href="#" onClick={navegar('animais')}>
-                                    Animais
+                                    Pets
                                 </a>
                                 <a className={`petapp-menu-link ${paginaAtual === 'tutores' ? 'active fw-bold' : ''}`} href="#" onClick={navegar('tutores')}>
                                     Tutores
