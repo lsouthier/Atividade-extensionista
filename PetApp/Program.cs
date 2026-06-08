@@ -8,12 +8,14 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using PetApp.Models;
+using PetApp.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 
 builder.Services.AddHttpContextAccessor();
+builder.Services.AddHostedService<AtualizacaoCastracoesService>();
 
 builder.Services.AddDbContext<PetAppContext>(options =>
     options.UseNpgsql(connectionString));
