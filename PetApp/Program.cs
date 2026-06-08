@@ -156,6 +156,22 @@ static string ObterSessionStamp(UsuarioSistema usuario)
     return dataBase.ToUniversalTime().Ticks.ToString();
 }
 
+static async Task GarantirColunasComplementaresAsync(PetAppContext context)
+{
+    await context.Database.ExecuteSqlRawAsync(@"
+ALTER TABLE ""UsuariosSistema""
+ADD COLUMN IF NOT EXISTS ""PerfilAcesso"" character varying(30) NOT NULL DEFAULT 'Administrador';
+
+UPDATE ""UsuariosSistema""
+SET ""PerfilAcesso"" = 'Administrador'
+WHERE ""PerfilAcesso"" IS NULL
+   OR BTRIM(""PerfilAcesso"") = '';
+
+ALTER TABLE ""Animais""
+ADD COLUMN IF NOT EXISTS ""DataNascimento"" date;
+");
+}
+
 static async Task InicializarBancoEUsuarioAdminAsync(WebApplication app)
 {
     await using var scope = app.Services.CreateAsyncScope();
@@ -163,6 +179,7 @@ static async Task InicializarBancoEUsuarioAdminAsync(WebApplication app)
     var context = scope.ServiceProvider.GetRequiredService<PetAppContext>();
 
     await context.Database.MigrateAsync();
+    await GarantirColunasComplementaresAsync(context);
 
     var existeUsuario = await context.UsuariosSistema.AnyAsync();
 
