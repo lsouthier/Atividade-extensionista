@@ -6,31 +6,85 @@ import {
     criarClinica,
     atualizarClinica,
     excluirClinica,
-    selecionarClinica
+    selecionarClinica,
+    limparConfirmacaoExclusaoClinica
 } from '../../store/clinicasSlice';
 import { Clinica, ClinicaCreate, ClinicaUpdate } from '../../api/clinicasApi';
-import { ClinicasList } from './ClinicasList';
+import { ClinicasList, ClinicaOrdenacaoCampo, OrdenacaoDirecao } from './ClinicasList';
 import { ClinicaForm } from './ClinicaForm';
 import { ClinicaDeleteModal } from './ClinicaDeleteModal';
 import { Paginacao } from '../common/Paginacao';
 
+const normalizarTexto = (valor?: string | null): string => {
+    return (valor ?? '')
+        .toString()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase()
+        .trim();
+};
+
+const obterValorOrdenacao = (clinica: Clinica, campo: ClinicaOrdenacaoCampo): string => {
+    switch (campo) {
+        case 'nome':
+            return normalizarTexto(clinica.nome);
+        case 'telefone':
+            return normalizarTexto(clinica.telefone);
+        case 'veterinarioResponsavel':
+            return normalizarTexto(clinica.veterinarioResponsavel);
+        default:
+            return normalizarTexto(clinica.nome);
+    }
+};
+
 export const ClinicasPage: React.FC = () => {
     const dispatch = useDispatch<AppDispatch>();
-    const { itens, carregando, erro, selecionado } = useSelector(
+    const { itens, carregando, erro, selecionado, confirmacaoExclusao } = useSelector(
         (state: RootState) => state.clinicas
     );
 
     const [modoEdicao, setModoEdicao] = useState(false);
-    const [idParaExcluir, setIdParaExcluir] = useState<number | null>(null);
     const [showFormModal, setShowFormModal] = useState(false);
     const [pagina, setPagina] = useState(1);
     const [tamanhoPagina, setTamanhoPagina] = useState(10);
+
+    const [pesquisa, setPesquisa] = useState('');
+    const [ordenarPor, setOrdenarPor] = useState<ClinicaOrdenacaoCampo>('nome');
+    const [direcaoOrdenacao, setDirecaoOrdenacao] = useState<OrdenacaoDirecao>('asc');
 
     useEffect(() => {
         dispatch(carregarClinicas());
     }, [dispatch]);
 
-    const totalPaginas = Math.max(1, Math.ceil(itens.length / tamanhoPagina));
+    const clinicasFiltradasOrdenadas = useMemo(() => {
+        const termo = normalizarTexto(pesquisa);
+
+        const filtradas = itens.filter(clinica => {
+            const textoBusca = [
+                clinica.nome,
+                clinica.telefone,
+                clinica.veterinarioResponsavel
+            ]
+                .map(normalizarTexto)
+                .join(' ');
+
+            return !termo || textoBusca.includes(termo);
+        });
+
+        return [...filtradas].sort((a, b) => {
+            const valorA = obterValorOrdenacao(a, ordenarPor);
+            const valorB = obterValorOrdenacao(b, ordenarPor);
+
+            const comparacao = valorA.localeCompare(valorB, 'pt-BR', {
+                numeric: true,
+                sensitivity: 'base'
+            });
+
+            return direcaoOrdenacao === 'asc' ? comparacao : comparacao * -1;
+        });
+    }, [itens, pesquisa, ordenarPor, direcaoOrdenacao]);
+
+    const totalPaginas = Math.max(1, Math.ceil(clinicasFiltradasOrdenadas.length / tamanhoPagina));
 
     useEffect(() => {
         if (pagina > totalPaginas) {
@@ -38,10 +92,22 @@ export const ClinicasPage: React.FC = () => {
         }
     }, [pagina, totalPaginas]);
 
+    useEffect(() => {
+        setPagina(1);
+    }, [pesquisa, ordenarPor, direcaoOrdenacao]);
+
     const clinicasPaginadas = useMemo(() => {
         const inicio = (pagina - 1) * tamanhoPagina;
-        return itens.slice(inicio, inicio + tamanhoPagina);
-    }, [itens, pagina, tamanhoPagina]);
+        return clinicasFiltradasOrdenadas.slice(inicio, inicio + tamanhoPagina);
+    }, [clinicasFiltradasOrdenadas, pagina, tamanhoPagina]);
+
+    const clinicaConfirmacao = useMemo(() => {
+        if (!confirmacaoExclusao) {
+            return null;
+        }
+
+        return itens.find(c => c.id === confirmacaoExclusao.id) ?? null;
+    }, [confirmacaoExclusao, itens]);
 
     const handleNovo = () => {
         dispatch(selecionarClinica(null));
@@ -66,11 +132,23 @@ export const ClinicasPage: React.FC = () => {
         setShowFormModal(false);
     };
 
-    const handleConfirmarExcluir = async () => {
-        if (idParaExcluir !== null) {
-            await dispatch(excluirClinica(idParaExcluir));
-            setIdParaExcluir(null);
+    const handleSolicitarExcluir = async (id: number) => {
+        await dispatch(excluirClinica({ id }));
+    };
+
+    const handleConfirmarExcluirComCastracoes = async () => {
+        if (!confirmacaoExclusao) {
+            return;
         }
+
+        await dispatch(excluirClinica({
+            id: confirmacaoExclusao.id,
+            excluirCastracoes: true
+        }));
+    };
+
+    const handleCancelarExclusaoComCastracoes = () => {
+        dispatch(limparConfirmacaoExclusaoClinica());
     };
 
     const handleMudarTamanhoPagina = (novoTamanho: number) => {
@@ -78,14 +156,63 @@ export const ClinicasPage: React.FC = () => {
         setPagina(1);
     };
 
+    const handleOrdenar = (campo: ClinicaOrdenacaoCampo) => {
+        if (ordenarPor === campo) {
+            setDirecaoOrdenacao(direcaoOrdenacao === 'asc' ? 'desc' : 'asc');
+            return;
+        }
+
+        setOrdenarPor(campo);
+        setDirecaoOrdenacao('asc');
+    };
+
+    const limparFiltros = () => {
+        setPesquisa('');
+        setOrdenarPor('nome');
+        setDirecaoOrdenacao('asc');
+        setPagina(1);
+    };
+
     return (
         <div className="row">
             <div className="col-12 mb-4">
                 <div className="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
-                    <h2 className="h4 mb-0">Lista de Clínicas</h2>
+                    <div>
+                        <h2 className="h4 mb-0">Lista de Clínicas</h2>
+                        <small className="text-muted">
+                            {clinicasFiltradasOrdenadas.length} de {itens.length} clínicas exibidas.
+                        </small>
+                    </div>
+
                     <button className="btn btn-primary btn-sm" onClick={handleNovo}>
                         Nova Clínica
                     </button>
+                </div>
+
+                <div className="card mb-3">
+                    <div className="card-body">
+                        <div className="row g-2">
+                            <div className="col-md-10">
+                                <label className="form-label">Pesquisar</label>
+                                <input
+                                    className="form-control form-control-sm"
+                                    value={pesquisa}
+                                    onChange={(e) => setPesquisa(e.target.value)}
+                                    placeholder="Nome, telefone ou veterinário responsável"
+                                />
+                            </div>
+
+                            <div className="col-md-2 d-flex align-items-end">
+                                <button
+                                    className="btn btn-outline-secondary btn-sm w-100"
+                                    type="button"
+                                    onClick={limparFiltros}
+                                >
+                                    Limpar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 {carregando && <div className="alert alert-info">Carregando...</div>}
@@ -94,14 +221,17 @@ export const ClinicasPage: React.FC = () => {
                 <ClinicasList
                     clinicas={clinicasPaginadas}
                     onEditar={handleEditar}
-                    onExcluir={(id) => setIdParaExcluir(id)}
+                    onExcluir={handleSolicitarExcluir}
+                    ordenarPor={ordenarPor}
+                    direcaoOrdenacao={direcaoOrdenacao}
+                    onOrdenar={handleOrdenar}
                 />
 
-                {itens.length > 0 && (
+                {clinicasFiltradasOrdenadas.length > 0 && (
                     <Paginacao
                         pagina={pagina}
                         tamanhoPagina={tamanhoPagina}
-                        totalRegistros={itens.length}
+                        totalRegistros={clinicasFiltradasOrdenadas.length}
                         onMudarPagina={setPagina}
                         onMudarTamanhoPagina={handleMudarTamanhoPagina}
                     />
@@ -131,9 +261,11 @@ export const ClinicasPage: React.FC = () => {
             )}
 
             <ClinicaDeleteModal
-                id={idParaExcluir}
-                onCancel={() => setIdParaExcluir(null)}
-                onConfirm={handleConfirmarExcluir}
+                clinica={clinicaConfirmacao}
+                totalCastracoes={confirmacaoExclusao?.totalCastracoes ?? 0}
+                mensagem={confirmacaoExclusao?.erro ?? ''}
+                onCancel={handleCancelarExclusaoComCastracoes}
+                onConfirm={handleConfirmarExcluirComCastracoes}
             />
         </div>
     );

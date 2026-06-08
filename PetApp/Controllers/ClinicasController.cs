@@ -67,9 +67,9 @@ namespace PetApp.Controllers
 
             var clinica = new Clinica
             {
-                Nome = dto.Nome,
-                Telefone = dto.Telefone,
-                VeterinarioResponsavel = dto.VeterinarioResponsavel
+                Nome = dto.Nome.Trim(),
+                Telefone = dto.Telefone.Trim(),
+                VeterinarioResponsavel = dto.VeterinarioResponsavel?.Trim() ?? string.Empty
             };
 
             _context.Clinicas.Add(clinica);
@@ -100,14 +100,15 @@ namespace PetApp.Controllers
             }
 
             var clinica = await _context.Clinicas.FindAsync(id);
+
             if (clinica == null)
             {
                 return NotFound();
             }
 
-            clinica.Nome = dto.Nome;
-            clinica.Telefone = dto.Telefone;
-            clinica.VeterinarioResponsavel = dto.VeterinarioResponsavel;
+            clinica.Nome = dto.Nome.Trim();
+            clinica.Telefone = dto.Telefone.Trim();
+            clinica.VeterinarioResponsavel = dto.VeterinarioResponsavel?.Trim() ?? string.Empty;
 
             await _context.SaveChangesAsync();
 
@@ -115,18 +116,80 @@ namespace PetApp.Controllers
         }
 
         [HttpDelete("{id:int}")]
-        public async Task<IActionResult> DeleteClinica(int id)
+        public async Task<IActionResult> DeleteClinica(
+            int id,
+            [FromQuery] bool excluirCastracoes = false)
         {
             var clinica = await _context.Clinicas.FindAsync(id);
+
             if (clinica == null)
             {
                 return NotFound();
             }
 
-            _context.Clinicas.Remove(clinica);
-            await _context.SaveChangesAsync();
+            var castracoes = await _context.Castracoes
+                .Where(c => c.IdClinica == id)
+                .ToListAsync();
 
-            return NoContent();
+            var totalCastracoes = castracoes.Count;
+
+            if (totalCastracoes > 0 && !excluirCastracoes)
+            {
+                return Conflict(new
+                {
+                    requerConfirmacao = true,
+                    totalCastracoes,
+                    erro = totalCastracoes == 1
+                        ? "Esta clínica possui 1 castração vinculada. Deseja excluir a clínica e também a castração vinculada?"
+                        : $"Esta clínica possui {totalCastracoes} castrações vinculadas. Deseja excluir a clínica e também todas as castrações vinculadas?"
+                });
+            }
+
+            await using var transaction = await _context.Database.BeginTransactionAsync();
+
+            try
+            {
+                if (totalCastracoes > 0)
+                {
+                    var idsAnimais = castracoes
+                        .Select(c => c.IdAnimal)
+                        .Distinct()
+                        .ToList();
+
+                    var animais = await _context.Animais
+                        .Where(a => idsAnimais.Contains(a.Id))
+                        .ToListAsync();
+
+                    foreach (var animal in animais)
+                    {
+                        animal.EhCastrado = false;
+                    }
+
+                    _context.Castracoes.RemoveRange(castracoes);
+                }
+
+                _context.Clinicas.Remove(clinica);
+
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                return NoContent();
+            }
+            catch (DbUpdateException ex)
+            {
+                await transaction.RollbackAsync();
+
+                var innerMessage = ex.InnerException?.Message ?? ex.Message;
+                ModelState.AddModelError("", $"Erro ao excluir clínica: {innerMessage}");
+                return BadRequest(ModelState);
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+
+                ModelState.AddModelError("", $"Erro inesperado: {ex.Message}");
+                return BadRequest(ModelState);
+            }
         }
     }
 }
