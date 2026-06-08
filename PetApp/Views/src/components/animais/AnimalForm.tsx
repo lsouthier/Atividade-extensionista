@@ -350,7 +350,7 @@ export const AnimalForm: React.FC<AnimalFormProps> = ({ animal, onSubmit, onCanc
         setErro(undefined);
 
         if (!form.nome?.trim()) {
-            setErro('Nome do animal é obrigatório.');
+            setErro('Nome do pet é obrigatório.');
             return;
         }
 
@@ -432,7 +432,7 @@ export const AnimalForm: React.FC<AnimalFormProps> = ({ animal, onSubmit, onCanc
                     {erro && <div className="alert alert-danger">{erro}</div>}
 
                     <div className="mb-2">
-                        <label className="form-label">Nome *</label>
+                        <label className="form-label">Nome <span className="text-danger">*</span></label>
                         <input
                             type="text"
                             name="nome"
@@ -445,7 +445,7 @@ export const AnimalForm: React.FC<AnimalFormProps> = ({ animal, onSubmit, onCanc
                     </div>
 
                     <div className="mb-2">
-                        <label className="form-label">Espécie *</label>
+                        <label className="form-label">Espécie <span className="text-danger">*</span></label>
                         <select
                             name="especie"
                             className="form-select form-select-sm"
@@ -461,7 +461,7 @@ export const AnimalForm: React.FC<AnimalFormProps> = ({ animal, onSubmit, onCanc
                     </div>
 
                     <div className="mb-2">
-                        <label className="form-label">Raça *</label>
+                        <label className="form-label">Raça <span className="text-danger">*</span></label>
                         <input
                             type="text"
                             name="raca"
@@ -474,7 +474,7 @@ export const AnimalForm: React.FC<AnimalFormProps> = ({ animal, onSubmit, onCanc
                     </div>
 
                     <div className="mb-2">
-                        <label className="form-label">Sexo *</label>
+                        <label className="form-label">Sexo <span className="text-danger">*</span></label>
                         <select
                             name="sexo"
                             className="form-select form-select-sm"

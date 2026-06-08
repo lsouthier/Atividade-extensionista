@@ -283,7 +283,7 @@ export const CastracaoForm: React.FC<CastracaoFormProps> = ({ onSubmit, onCancel
         }
 
         if (!form.idAnimal || form.idAnimal <= 0) {
-            setErro('Selecione um animal válido.');
+            setErro('Selecione um pet válido.');
             return;
         }
 
@@ -392,7 +392,7 @@ export const CastracaoForm: React.FC<CastracaoFormProps> = ({ onSubmit, onCancel
                 </div>
 
                 <div className="mb-2">
-                    <label className="form-label">Animal *</label>
+                    <label className="form-label">Pet *</label>
                     <select
                         name="idAnimal"
                         className="form-select form-select-sm"
@@ -400,7 +400,7 @@ export const CastracaoForm: React.FC<CastracaoFormProps> = ({ onSubmit, onCancel
                         onChange={handleChange}
                         required
                     >
-                        <option value={0}>Selecione um animal...</option>
+                        <option value={0}>Selecione um pet...</option>
                         {animaisDisponiveis.map(animal => (
                             <option key={animal.id} value={animal.id}>
                                 {animal.nome} ({animal.especie})

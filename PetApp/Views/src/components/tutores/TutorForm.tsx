@@ -332,7 +332,7 @@ export const TutorForm: React.FC<TutorFormProps> = ({ tutor, onSubmit, onCancel 
                 {erro && <div className="alert alert-danger">{erro}</div>}
 
                 <div className="mb-2">
-                    <label className="form-label">Nome *</label>
+                    <label className="form-label">Nome <span className="text-danger">*</span></label>
                     <input
                         type="text"
                         name="nome"
@@ -346,7 +346,7 @@ export const TutorForm: React.FC<TutorFormProps> = ({ tutor, onSubmit, onCancel 
 
                 <div className="row">
                     <div className="col-md-4 mb-2">
-                        <label className="form-label">CEP *</label>
+                        <label className="form-label">CEP <span className="text-danger">*</span></label>
                         <input
                             type="text"
                             name="cep"
@@ -364,7 +364,7 @@ export const TutorForm: React.FC<TutorFormProps> = ({ tutor, onSubmit, onCancel 
                     </div>
 
                     <div className="col-md-6 mb-2">
-                        <label className="form-label">Cidade *</label>
+                        <label className="form-label">Cidade <span className="text-danger">*</span></label>
                         <input
                             type="text"
                             name="cidade"
@@ -377,7 +377,7 @@ export const TutorForm: React.FC<TutorFormProps> = ({ tutor, onSubmit, onCancel 
                     </div>
 
                     <div className="col-md-2 mb-2">
-                        <label className="form-label">UF *</label>
+                        <label className="form-label">UF <span className="text-danger">*</span></label>
                         <input
                             type="text"
                             name="uf"
@@ -394,7 +394,7 @@ export const TutorForm: React.FC<TutorFormProps> = ({ tutor, onSubmit, onCancel 
 
                 <div className="row">
                     <div className="col-md-8 mb-2">
-                        <label className="form-label">Rua / Logradouro *</label>
+                        <label className="form-label">Rua / Logradouro <span className="text-danger">*</span></label>
                         <input
                             type="text"
                             name="logradouro"
@@ -407,7 +407,7 @@ export const TutorForm: React.FC<TutorFormProps> = ({ tutor, onSubmit, onCancel 
                     </div>
 
                     <div className="col-md-4 mb-2">
-                        <label className="form-label">Número *</label>
+                        <label className="form-label">Número <span className="text-danger">*</span></label>
                         <input
                             type="text"
                             name="numero"
@@ -422,7 +422,7 @@ export const TutorForm: React.FC<TutorFormProps> = ({ tutor, onSubmit, onCancel 
 
                 <div className="row">
                     <div className="col-md-6 mb-2">
-                        <label className="form-label">Bairro *</label>
+                        <label className="form-label">Bairro <span className="text-danger">*</span></label>
                         <input
                             type="text"
                             name="bairro"
@@ -459,7 +459,7 @@ export const TutorForm: React.FC<TutorFormProps> = ({ tutor, onSubmit, onCancel 
                 </div>
 
                 <div className="mb-2">
-                    <label className="form-label">Telefone *</label>
+                    <label className="form-label">Telefone <span className="text-danger">*</span></label>
                     <input
                         type="text"
                         name="telefone"
@@ -489,17 +489,7 @@ export const TutorForm: React.FC<TutorFormProps> = ({ tutor, onSubmit, onCancel 
                     <button
                         type="submit"
                         className="btn btn-primary btn-sm"
-                        disabled={
-                            salvando ||
-                            !form.nome.trim() ||
-                            !form.cep.replace(/\D/g, '') ||
-                            !form.logradouro.trim() ||
-                            !form.numero.trim() ||
-                            !form.bairro.trim() ||
-                            !form.cidade.trim() ||
-                            !form.uf.trim() ||
-                            !form.telefone.replace(/\D/g, '')
-                        }
+                        disabled={salvando}
                     >
                         {salvando ? 'Salvando...' : 'Salvar'}
                     </button>

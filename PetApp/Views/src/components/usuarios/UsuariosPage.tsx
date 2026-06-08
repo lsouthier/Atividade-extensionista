@@ -477,7 +477,7 @@ export const UsuariosPage: React.FC = () => {
                                     )}
 
                                     <div className="mb-2">
-                                        <label className="form-label">Usuário *</label>
+                                        <label className="form-label">Usuário <span className="text-danger">*</span></label>
                                         <input
                                             className="form-control form-control-sm"
                                             value={form.nomeUsuario}
@@ -487,7 +487,7 @@ export const UsuariosPage: React.FC = () => {
                                     </div>
 
                                     <div className="mb-2">
-                                        <label className="form-label">Nome *</label>
+                                        <label className="form-label">Nome <span className="text-danger">*</span></label>
                                         <input
                                             className="form-control form-control-sm"
                                             value={form.nome}
@@ -497,7 +497,7 @@ export const UsuariosPage: React.FC = () => {
                                     </div>
 
                                     <div className="mb-2">
-                                        <label className="form-label">Tipo de usuário *</label>
+                                        <label className="form-label">Tipo de usuário <span className="text-danger">*</span></label>
                                         <select
                                             className="form-select form-select-sm"
                                             value={form.perfilAcesso}
@@ -518,7 +518,13 @@ export const UsuariosPage: React.FC = () => {
 
                                     <div className="mb-2">
                                         <label className="form-label">
-                                            {selecionado ? 'Nova senha' : 'Senha *'}
+                                            {selecionado ? (
+                                                'Nova senha'
+                                            ) : (
+                                                <>
+                                                    Senha <span className="text-danger">*</span>
+                                                </>
+                                            )}
                                         </label>
                                         <input
                                             type="password"
