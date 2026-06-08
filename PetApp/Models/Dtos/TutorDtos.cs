@@ -8,9 +8,31 @@ namespace PetApp.Models.Dtos
         [MaxLength(200)]
         public string Nome { get; set; } = string.Empty;
 
-        [MaxLength(200)]
+        [MaxLength(300)]
         public string Endereco { get; set; } = string.Empty;
 
+        [MaxLength(9)]
+        public string Cep { get; set; } = string.Empty;
+
+        [MaxLength(200)]
+        public string Logradouro { get; set; } = string.Empty;
+
+        [MaxLength(20)]
+        public string Numero { get; set; } = string.Empty;
+
+        [MaxLength(100)]
+        public string Complemento { get; set; } = string.Empty;
+
+        [MaxLength(100)]
+        public string Bairro { get; set; } = string.Empty;
+
+        [MaxLength(100)]
+        public string Cidade { get; set; } = string.Empty;
+
+        [MaxLength(2)]
+        public string Uf { get; set; } = string.Empty;
+
+        [Required]
         [MaxLength(20)]
         public string Telefone { get; set; } = string.Empty;
     }
@@ -24,8 +46,27 @@ namespace PetApp.Models.Dtos
     public class TutorReadDto
     {
         public int Id { get; set; }
+
         public string Nome { get; set; } = string.Empty;
+
         public string Endereco { get; set; } = string.Empty;
+
+        public string EnderecoCompleto { get; set; } = string.Empty;
+
+        public string Cep { get; set; } = string.Empty;
+
+        public string Logradouro { get; set; } = string.Empty;
+
+        public string Numero { get; set; } = string.Empty;
+
+        public string Complemento { get; set; } = string.Empty;
+
+        public string Bairro { get; set; } = string.Empty;
+
+        public string Cidade { get; set; } = string.Empty;
+
+        public string Uf { get; set; } = string.Empty;
+
         public string Telefone { get; set; } = string.Empty;
     }
 }

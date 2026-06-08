@@ -28,17 +28,10 @@ namespace PetApp.Controllers
                 var tutores = await _context.Tutores
                     .AsNoTracking()
                     .Where(t => !string.IsNullOrWhiteSpace(t.Nome))
+                    .OrderBy(t => t.Nome)
                     .ToListAsync();
 
-                var result = tutores.Select(t => new TutorReadDto
-                {
-                    Id = t.Id,
-                    Nome = t.Nome,
-                    Endereco = t.Endereco,
-                    Telefone = t.Telefone
-                });
-
-                return Ok(result);
+                return Ok(tutores.Select(MapToReadDto));
             }
             catch (Exception ex)
             {
@@ -59,24 +52,28 @@ namespace PetApp.Controllers
                 return NotFound();
             }
 
-            var dto = new TutorReadDto
-            {
-                Id = tutor.Id,
-                Nome = tutor.Nome,
-                Endereco = tutor.Endereco,
-                Telefone = tutor.Telefone
-            };
-
-            return Ok(dto);
+            return Ok(MapToReadDto(tutor));
         }
-        [Authorize(Policy = "PodeCadastrar")]
 
+        [Authorize(Policy = "PodeCadastrar")]
         [HttpPost]
         public async Task<ActionResult<TutorReadDto>> CreateTutor([FromBody] TutorCreateDto dto)
         {
             if (string.IsNullOrWhiteSpace(dto.Nome))
             {
                 ModelState.AddModelError(nameof(dto.Nome), "Nome do tutor é obrigatório e não pode estar vazio.");
+                return BadRequest(ModelState);
+            }
+
+            if (string.IsNullOrWhiteSpace(dto.Telefone))
+            {
+                ModelState.AddModelError(nameof(dto.Telefone), "Telefone do tutor é obrigatório.");
+                return BadRequest(ModelState);
+            }
+
+            if (!TelefoneValido(dto.Telefone))
+            {
+                ModelState.AddModelError(nameof(dto.Telefone), "Telefone inválido. Informe DDD e número.");
                 return BadRequest(ModelState);
             }
 
@@ -88,8 +85,15 @@ namespace PetApp.Controllers
             var tutor = new Tutor
             {
                 Nome = dto.Nome.Trim(),
-                Endereco = dto.Endereco?.Trim() ?? string.Empty,
-                Telefone = dto.Telefone?.Trim() ?? string.Empty
+                Endereco = MontarEnderecoLegado(dto),
+                Cep = Limpar(dto.Cep),
+                Logradouro = Limpar(dto.Logradouro),
+                Numero = Limpar(dto.Numero),
+                Complemento = Limpar(dto.Complemento),
+                Bairro = Limpar(dto.Bairro),
+                Cidade = Limpar(dto.Cidade),
+                Uf = Limpar(dto.Uf).ToUpperInvariant(),
+                Telefone = Limpar(dto.Telefone)
             };
 
             try
@@ -99,15 +103,7 @@ namespace PetApp.Controllers
 
                 _logger.LogInformation("Tutor criado: ID={Id}, Nome='{Nome}'", tutor.Id, tutor.Nome);
 
-                var readDto = new TutorReadDto
-                {
-                    Id = tutor.Id,
-                    Nome = tutor.Nome,
-                    Endereco = tutor.Endereco,
-                    Telefone = tutor.Telefone
-                };
-
-                return CreatedAtAction(nameof(GetTutor), new { id = tutor.Id }, readDto);
+                return CreatedAtAction(nameof(GetTutor), new { id = tutor.Id }, MapToReadDto(tutor));
             }
             catch (DbUpdateException ex)
             {
@@ -122,8 +118,8 @@ namespace PetApp.Controllers
                 return BadRequest(ModelState);
             }
         }
-        [Authorize(Policy = "PodeCadastrar")]
 
+        [Authorize(Policy = "PodeCadastrar")]
         [HttpPut("{id:int}")]
         public async Task<IActionResult> UpdateTutor(int id, [FromBody] TutorUpdateDto dto)
         {
@@ -138,20 +134,40 @@ namespace PetApp.Controllers
                 return BadRequest(ModelState);
             }
 
+            if (string.IsNullOrWhiteSpace(dto.Telefone))
+            {
+                ModelState.AddModelError(nameof(dto.Telefone), "Telefone do tutor é obrigatório.");
+                return BadRequest(ModelState);
+            }
+
+            if (!TelefoneValido(dto.Telefone))
+            {
+                ModelState.AddModelError(nameof(dto.Telefone), "Telefone inválido. Informe DDD e número.");
+                return BadRequest(ModelState);
+            }
+
             if (!ModelState.IsValid)
             {
                 return BadRequest(ModelState);
             }
 
             var tutor = await _context.Tutores.FindAsync(id);
+
             if (tutor == null)
             {
                 return NotFound();
             }
 
             tutor.Nome = dto.Nome.Trim();
-            tutor.Endereco = dto.Endereco?.Trim() ?? string.Empty;
-            tutor.Telefone = dto.Telefone?.Trim() ?? string.Empty;
+            tutor.Endereco = MontarEnderecoLegado(dto);
+            tutor.Cep = Limpar(dto.Cep);
+            tutor.Logradouro = Limpar(dto.Logradouro);
+            tutor.Numero = Limpar(dto.Numero);
+            tutor.Complemento = Limpar(dto.Complemento);
+            tutor.Bairro = Limpar(dto.Bairro);
+            tutor.Cidade = Limpar(dto.Cidade);
+            tutor.Uf = Limpar(dto.Uf).ToUpperInvariant();
+            tutor.Telefone = Limpar(dto.Telefone);
 
             try
             {
@@ -172,8 +188,8 @@ namespace PetApp.Controllers
                 return BadRequest(ModelState);
             }
         }
-        [Authorize(Policy = "PodeCadastrar")]
 
+        [Authorize(Policy = "PodeCadastrar")]
         [HttpDelete("{id:int}")]
         public async Task<IActionResult> DeleteTutor(int id, [FromQuery] bool excluirAnimais = false)
         {
@@ -252,6 +268,142 @@ namespace PetApp.Controllers
                 ModelState.AddModelError("", $"Erro inesperado: {ex.Message}");
                 return BadRequest(ModelState);
             }
+        }
+
+        private static bool TelefoneValido(string? telefone)
+        {
+            var digitos = new string((telefone ?? string.Empty).Where(char.IsDigit).ToArray());
+
+            return digitos.Length == 10 || digitos.Length == 11;
+        }
+
+        private static TutorReadDto MapToReadDto(Tutor tutor)
+        {
+            return new TutorReadDto
+            {
+                Id = tutor.Id,
+                Nome = tutor.Nome,
+                Endereco = tutor.Endereco,
+                EnderecoCompleto = MontarEnderecoCompleto(tutor),
+                Cep = tutor.Cep,
+                Logradouro = tutor.Logradouro,
+                Numero = tutor.Numero,
+                Complemento = tutor.Complemento,
+                Bairro = tutor.Bairro,
+                Cidade = tutor.Cidade,
+                Uf = tutor.Uf,
+                Telefone = tutor.Telefone
+            };
+        }
+
+        private static string MontarEnderecoLegado(TutorCreateDto dto)
+        {
+            var partes = new List<string>();
+
+            if (!string.IsNullOrWhiteSpace(dto.Logradouro))
+            {
+                var logradouro = dto.Logradouro.Trim();
+
+                if (!string.IsNullOrWhiteSpace(dto.Numero))
+                {
+                    logradouro += $", {dto.Numero.Trim()}";
+                }
+
+                partes.Add(logradouro);
+            }
+            else if (!string.IsNullOrWhiteSpace(dto.Endereco))
+            {
+                partes.Add(dto.Endereco.Trim());
+            }
+
+            if (!string.IsNullOrWhiteSpace(dto.Complemento))
+            {
+                partes.Add(dto.Complemento.Trim());
+            }
+
+            if (!string.IsNullOrWhiteSpace(dto.Bairro))
+            {
+                partes.Add(dto.Bairro.Trim());
+            }
+
+            var cidadeUf = MontarCidadeUf(dto.Cidade, dto.Uf);
+
+            if (!string.IsNullOrWhiteSpace(cidadeUf))
+            {
+                partes.Add(cidadeUf);
+            }
+
+            if (!string.IsNullOrWhiteSpace(dto.Cep))
+            {
+                partes.Add($"CEP {dto.Cep.Trim()}");
+            }
+
+            return string.Join(" - ", partes);
+        }
+
+        private static string MontarEnderecoCompleto(Tutor tutor)
+        {
+            var partes = new List<string>();
+
+            if (!string.IsNullOrWhiteSpace(tutor.Logradouro))
+            {
+                var logradouro = tutor.Logradouro.Trim();
+
+                if (!string.IsNullOrWhiteSpace(tutor.Numero))
+                {
+                    logradouro += $", {tutor.Numero.Trim()}";
+                }
+
+                partes.Add(logradouro);
+            }
+            else if (!string.IsNullOrWhiteSpace(tutor.Endereco))
+            {
+                partes.Add(tutor.Endereco.Trim());
+            }
+
+            if (!string.IsNullOrWhiteSpace(tutor.Complemento))
+            {
+                partes.Add(tutor.Complemento.Trim());
+            }
+
+            if (!string.IsNullOrWhiteSpace(tutor.Bairro))
+            {
+                partes.Add(tutor.Bairro.Trim());
+            }
+
+            var cidadeUf = MontarCidadeUf(tutor.Cidade, tutor.Uf);
+
+            if (!string.IsNullOrWhiteSpace(cidadeUf))
+            {
+                partes.Add(cidadeUf);
+            }
+
+            if (!string.IsNullOrWhiteSpace(tutor.Cep))
+            {
+                partes.Add($"CEP {tutor.Cep.Trim()}");
+            }
+
+            return partes.Count > 0
+                ? string.Join(" - ", partes)
+                : tutor.Endereco;
+        }
+
+        private static string MontarCidadeUf(string? cidade, string? uf)
+        {
+            cidade = Limpar(cidade);
+            uf = Limpar(uf).ToUpperInvariant();
+
+            if (!string.IsNullOrWhiteSpace(cidade) && !string.IsNullOrWhiteSpace(uf))
+            {
+                return $"{cidade}/{uf}";
+            }
+
+            return !string.IsNullOrWhiteSpace(cidade) ? cidade : uf;
+        }
+
+        private static string Limpar(string? valor)
+        {
+            return valor?.Trim() ?? string.Empty;
         }
     }
 }
