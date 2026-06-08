@@ -215,6 +215,7 @@ export const AnimalForm: React.FC<AnimalFormProps> = ({ animal, onSubmit, onCanc
     const [salvandoTutor, setSalvandoTutor] = useState(false);
     const [erroTutor, setErroTutor] = useState<string | undefined>();
     const dataPickerRef = useRef<HTMLInputElement>(null);
+    const tutoresSolicitadosRef = useRef(false);
 
     const idadeCalculada = useMemo(
         () => calcularIdade(form.dataNascimentoIso),
@@ -222,10 +223,11 @@ export const AnimalForm: React.FC<AnimalFormProps> = ({ animal, onSubmit, onCanc
     );
 
     useEffect(() => {
-        if (tutores.length === 0 && !tutoresCarregando) {
+        if (!tutoresSolicitadosRef.current) {
+            tutoresSolicitadosRef.current = true;
             dispatch(carregarTutores());
         }
-    }, [dispatch, tutores.length, tutoresCarregando]);
+    }, [dispatch]);
 
     useEffect(() => {
         if (animal) {
@@ -423,10 +425,6 @@ export const AnimalForm: React.FC<AnimalFormProps> = ({ animal, onSubmit, onCanc
         }
     };
 
-    if (tutoresCarregando) {
-        return <div className="alert alert-info">Carregando tutores...</div>;
-    }
-
     return (
         <>
             <form onSubmit={handleSubmit} className="card">
@@ -593,7 +591,11 @@ export const AnimalForm: React.FC<AnimalFormProps> = ({ animal, onSubmit, onCanc
                                 ))}
                             </select>
                             <small className="form-text text-muted">
-                                Tutores disponíveis: {tutores.length}
+                                {tutoresCarregando
+                                    ? 'Carregando tutores...'
+                                    : tutores.length > 0
+                                      ? `Tutores disponíveis: ${tutores.length}`
+                                      : 'Nenhum tutor cadastrado. Clique em + Novo tutor para cadastrar.'}
                             </small>
                         </div>
                     </div>
@@ -613,7 +615,7 @@ export const AnimalForm: React.FC<AnimalFormProps> = ({ animal, onSubmit, onCanc
                     <button
                         className="btn btn-primary btn-sm"
                         type="submit"
-                        disabled={salvando || tutores.length === 0}
+                        disabled={salvando}
                     >
                         {salvando ? 'Salvando...' : 'Salvar'}
                     </button>
