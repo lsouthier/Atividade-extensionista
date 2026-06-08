@@ -9,6 +9,7 @@ import { CastracoesPa } from './components/castracoes/CastracoesPa';
 import { UsuariosPage } from './components/usuarios/UsuariosPage';
 import { AuditoriaPage } from './components/auditoria/AuditoriaPage';
 import { LoginPage } from './components/auth/LoginPage';
+import { VersionFooter } from './components/common/VersionFooter';
 import logo from './assets/logo.jpg';
 import './styles/responsive.css';
 
@@ -58,7 +59,12 @@ export const App: React.FC = () => {
     }, [ehAdministrador, paginaAtual]);
 
     if (!autenticado) {
-        return <LoginPage />;
+        return (
+            <div className="petapp-shell-login">
+                <LoginPage />
+                <VersionFooter />
+            </div>
+        );
     }
 
     const navegar = (pagina: Pagina) => async (e: React.MouseEvent<HTMLAnchorElement>) => {
@@ -153,14 +159,16 @@ export const App: React.FC = () => {
                 </div>
             </nav>
 
-            <div className="container">
+            <main className="container petapp-main-content">
                 {paginaAtual === 'animais' && <AnimaisPage />}
                 {paginaAtual === 'tutores' && <TutoresPage />}
                 {paginaAtual === 'clinicas' && <ClinicasPage />}
                 {paginaAtual === 'castracoes' && <CastracoesPa />}
                 {paginaAtual === 'usuarios' && ehAdministrador && <UsuariosPage />}
                 {paginaAtual === 'auditoria' && ehAdministrador && <AuditoriaPage />}
-            </div>
+            </main>
+
+            <VersionFooter />
         </div>
     );
 };
