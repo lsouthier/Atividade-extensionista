@@ -223,7 +223,7 @@ export const CastracoesPa: React.FC = () => {
                                     className="form-control form-control-sm"
                                     value={pesquisa}
                                     onChange={(e) => setPesquisa(e.target.value)}
-                                    placeholder="Animal, clínica ou observações"
+                                    placeholder="Pet, clínica ou observações"
                                 />
                             </div>
 

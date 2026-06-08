@@ -93,7 +93,7 @@ export const CastracoesList: React.FC<CastracoeListProps> = ({
                     {castracoes.map(castracao => (
                         <tr key={castracao.id}>
                             <td>{formatarDataSemTimezone(castracao.dataCastracao)}</td>
-                            <td>{castracao.nomePet}</td>
+                            <td>{castracao.nomeAnimal}</td>
                             <td>{castracao.nomeClinica}</td>
                             <td>R$ {formatarValor(castracao.valor)}</td>
                             <td>
