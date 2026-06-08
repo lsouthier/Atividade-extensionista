@@ -28,8 +28,16 @@ const obterValorOrdenacao = (tutor: Tutor, campo: TutorOrdenacaoCampo): string =
     switch (campo) {
         case 'nome':
             return normalizarTexto(tutor.nome);
+        case 'cep':
+            return normalizarTexto(tutor.cep);
         case 'endereco':
-            return normalizarTexto(tutor.endereco);
+            return normalizarTexto(tutor.enderecoCompleto || tutor.endereco);
+        case 'bairro':
+            return normalizarTexto(tutor.bairro);
+        case 'cidade':
+            return normalizarTexto(tutor.cidade);
+        case 'uf':
+            return normalizarTexto(tutor.uf);
         case 'telefone':
             return normalizarTexto(tutor.telefone);
         default:
@@ -61,7 +69,15 @@ export const TutoresPage: React.FC = () => {
         const filtrados = itens.filter(tutor => {
             const textoBusca = [
                 tutor.nome,
+                tutor.cep,
                 tutor.endereco,
+                tutor.enderecoCompleto,
+                tutor.logradouro,
+                tutor.numero,
+                tutor.complemento,
+                tutor.bairro,
+                tutor.cidade,
+                tutor.uf,
                 tutor.telefone
             ]
                 .map(normalizarTexto)
@@ -204,7 +220,7 @@ export const TutoresPage: React.FC = () => {
                                     className="form-control form-control-sm"
                                     value={pesquisa}
                                     onChange={(e) => setPesquisa(e.target.value)}
-                                    placeholder="Nome, endereço ou telefone"
+                                    placeholder="Nome, CEP, endereço, bairro, cidade, UF ou telefone"
                                 />
                             </div>
                             <div className="col-md-2 d-flex align-items-end">

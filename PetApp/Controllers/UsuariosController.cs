@@ -70,9 +70,9 @@ namespace PetApp.Controllers
                 return BadRequest(ModelState);
             }
 
-            if (string.IsNullOrWhiteSpace(dto.Senha) || dto.Senha.Length < 4)
+            if (!SenhaAtendePolitica(dto.Senha))
             {
-                ModelState.AddModelError(nameof(dto.Senha), "Senha deve ter pelo menos 4 caracteres.");
+                ModelState.AddModelError(nameof(dto.Senha), ObterMensagemSenhaInvalida());
                 return BadRequest(ModelState);
             }
 
@@ -179,9 +179,9 @@ namespace PetApp.Controllers
 
             if (!string.IsNullOrWhiteSpace(dto.NovaSenha))
             {
-                if (dto.NovaSenha.Length < 4)
+                if (!SenhaAtendePolitica(dto.NovaSenha))
                 {
-                    ModelState.AddModelError(nameof(dto.NovaSenha), "Nova senha deve ter pelo menos 4 caracteres.");
+                    ModelState.AddModelError(nameof(dto.NovaSenha), ObterMensagemSenhaInvalida());
                     return BadRequest(ModelState);
                 }
 
@@ -225,6 +225,26 @@ namespace PetApp.Controllers
             await _context.SaveChangesAsync();
 
             return NoContent();
+        }
+
+        private static bool SenhaAtendePolitica(string? senha)
+        {
+            if (string.IsNullOrWhiteSpace(senha) || senha.Length < 6)
+            {
+                return false;
+            }
+
+            var temMaiuscula = senha.Any(char.IsUpper);
+            var temMinuscula = senha.Any(char.IsLower);
+            var temDigito = senha.Any(char.IsDigit);
+            var temEspecial = senha.Any(c => !char.IsLetterOrDigit(c));
+
+            return temMaiuscula && temMinuscula && temDigito && temEspecial;
+        }
+
+        private static string ObterMensagemSenhaInvalida()
+        {
+            return "A senha deve ter pelo menos 6 caracteres, contendo letra maiúscula, letra minúscula, número e caractere especial.";
         }
 
         private static UsuarioSistemaReadDto MapToReadDto(UsuarioSistema usuario)

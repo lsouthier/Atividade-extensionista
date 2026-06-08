@@ -169,6 +169,30 @@ WHERE ""PerfilAcesso"" IS NULL
 
 ALTER TABLE ""Animais""
 ADD COLUMN IF NOT EXISTS ""DataNascimento"" date;
+
+ALTER TABLE ""Tutores""
+ADD COLUMN IF NOT EXISTS ""Cep"" character varying(9) NOT NULL DEFAULT '';
+
+ALTER TABLE ""Tutores""
+ADD COLUMN IF NOT EXISTS ""Logradouro"" character varying(200) NOT NULL DEFAULT '';
+
+ALTER TABLE ""Tutores""
+ADD COLUMN IF NOT EXISTS ""Numero"" character varying(20) NOT NULL DEFAULT '';
+
+ALTER TABLE ""Tutores""
+ADD COLUMN IF NOT EXISTS ""Complemento"" character varying(100) NOT NULL DEFAULT '';
+
+ALTER TABLE ""Tutores""
+ADD COLUMN IF NOT EXISTS ""Bairro"" character varying(100) NOT NULL DEFAULT '';
+
+ALTER TABLE ""Tutores""
+ADD COLUMN IF NOT EXISTS ""Cidade"" character varying(100) NOT NULL DEFAULT '';
+
+ALTER TABLE ""Tutores""
+ADD COLUMN IF NOT EXISTS ""Uf"" character varying(2) NOT NULL DEFAULT '';
+
+ALTER TABLE ""Tutores""
+ALTER COLUMN ""Endereco"" TYPE character varying(300);
 ");
 }
 

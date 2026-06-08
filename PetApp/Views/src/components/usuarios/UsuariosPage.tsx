@@ -36,6 +36,17 @@ const initialForm: FormState = {
     ativo: true
 };
 
+const senhaAtendePolitica = (senha: string): boolean => {
+    return senha.length >= 6 &&
+        /[A-Z]/.test(senha) &&
+        /[a-z]/.test(senha) &&
+        /\d/.test(senha) &&
+        /[^A-Za-z0-9]/.test(senha);
+};
+
+const mensagemSenhaInvalida = 'A senha deve ter pelo menos 6 caracteres, contendo letra maiúscula, letra minúscula, número e caractere especial.';
+
+
 const normalizarTexto = (valor?: string | null): string => {
     return (valor ?? '')
         .toString()
@@ -123,6 +134,7 @@ export const UsuariosPage: React.FC = () => {
 
     const [showModal, setShowModal] = useState(false);
     const [form, setForm] = useState<FormState>(initialForm);
+    const [erroFormulario, setErroFormulario] = useState<string | undefined>();
     const [pagina, setPagina] = useState(1);
     const [tamanhoPagina, setTamanhoPagina] = useState(10);
 
@@ -201,11 +213,13 @@ export const UsuariosPage: React.FC = () => {
     const abrirNovo = () => {
         dispatch(selecionarUsuario(null));
         setForm(initialForm);
+        setErroFormulario(undefined);
         setShowModal(true);
     };
 
     const abrirEditar = (usuario: UsuarioSistema) => {
         dispatch(selecionarUsuario(usuario));
+        setErroFormulario(undefined);
         setForm({
             id: usuario.id,
             nomeUsuario: usuario.nomeUsuario,
@@ -219,8 +233,14 @@ export const UsuariosPage: React.FC = () => {
 
     const salvar = async (e: React.FormEvent) => {
         e.preventDefault();
+        setErroFormulario(undefined);
 
         if (form.id && form.id > 0) {
+            if (form.senha && !senhaAtendePolitica(form.senha)) {
+                setErroFormulario(mensagemSenhaInvalida);
+                return;
+            }
+
             const payload: UsuarioSistemaUpdate = {
                 id: form.id,
                 nomeUsuario: form.nomeUsuario,
@@ -236,6 +256,11 @@ export const UsuariosPage: React.FC = () => {
                 setShowModal(false);
             }
 
+            return;
+        }
+
+        if (!senhaAtendePolitica(form.senha)) {
+            setErroFormulario(mensagemSenhaInvalida);
             return;
         }
 
@@ -445,6 +470,12 @@ export const UsuariosPage: React.FC = () => {
                                 </div>
 
                                 <div className="modal-body">
+                                    {erroFormulario && (
+                                        <div className="alert alert-danger py-2">
+                                            {erroFormulario}
+                                        </div>
+                                    )}
+
                                     <div className="mb-2">
                                         <label className="form-label">Usuário *</label>
                                         <input
@@ -495,13 +526,16 @@ export const UsuariosPage: React.FC = () => {
                                             value={form.senha}
                                             onChange={(e) => setForm(prev => ({ ...prev, senha: e.target.value }))}
                                             required={!selecionado}
-                                            minLength={4}
+                                            minLength={6}
                                         />
-                                        {selecionado && (
-                                            <small className="text-muted">
-                                                Deixe em branco para manter a senha atual.
-                                            </small>
-                                        )}
+                                        <small className="text-muted d-block">
+                                            {selecionado
+                                                ? 'Deixe em branco para manter a senha atual.'
+                                                : 'Senha obrigatória.'}
+                                        </small>
+                                        <small className="text-muted d-block">
+                                            Mínimo 6 caracteres, com maiúscula, minúscula, número e caractere especial.
+                                        </small>
                                     </div>
 
                                     <div className="form-check mt-3">

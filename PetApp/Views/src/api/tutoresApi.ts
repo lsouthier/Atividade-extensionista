@@ -4,12 +4,27 @@ export interface Tutor {
     id: number;
     nome: string;
     endereco: string;
+    enderecoCompleto: string;
+    cep: string;
+    logradouro: string;
+    numero: string;
+    complemento: string;
+    bairro: string;
+    cidade: string;
+    uf: string;
     telefone: string;
 }
 
 export interface TutorCreate {
     nome: string;
     endereco: string;
+    cep: string;
+    logradouro: string;
+    numero: string;
+    complemento: string;
+    bairro: string;
+    cidade: string;
+    uf: string;
     telefone: string;
 }
 

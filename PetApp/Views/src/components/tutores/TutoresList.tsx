@@ -1,7 +1,7 @@
 import React from 'react';
 import { Tutor } from '../../api/tutoresApi';
 
-export type TutorOrdenacaoCampo = 'nome' | 'endereco' | 'telefone';
+export type TutorOrdenacaoCampo = 'nome' | 'cep' | 'endereco' | 'bairro' | 'cidade' | 'uf' | 'telefone';
 export type OrdenacaoDirecao = 'asc' | 'desc';
 
 interface TutoresListProps {
@@ -61,7 +61,11 @@ export const TutoresList: React.FC<TutoresListProps> = ({
                 <thead className="table-light">
                     <tr>
                         <Cabecalho campo="nome" titulo="Nome" ordenarPor={ordenarPor} direcaoOrdenacao={direcaoOrdenacao} onOrdenar={onOrdenar} />
+                        <Cabecalho campo="cep" titulo="CEP" ordenarPor={ordenarPor} direcaoOrdenacao={direcaoOrdenacao} onOrdenar={onOrdenar} />
                         <Cabecalho campo="endereco" titulo="Endereço" ordenarPor={ordenarPor} direcaoOrdenacao={direcaoOrdenacao} onOrdenar={onOrdenar} />
+                        <Cabecalho campo="bairro" titulo="Bairro" ordenarPor={ordenarPor} direcaoOrdenacao={direcaoOrdenacao} onOrdenar={onOrdenar} />
+                        <Cabecalho campo="cidade" titulo="Cidade" ordenarPor={ordenarPor} direcaoOrdenacao={direcaoOrdenacao} onOrdenar={onOrdenar} />
+                        <Cabecalho campo="uf" titulo="UF" ordenarPor={ordenarPor} direcaoOrdenacao={direcaoOrdenacao} onOrdenar={onOrdenar} />
                         <Cabecalho campo="telefone" titulo="Telefone" ordenarPor={ordenarPor} direcaoOrdenacao={direcaoOrdenacao} onOrdenar={onOrdenar} />
                         <th style={{ width: 130 }}>Ações</th>
                     </tr>
@@ -70,7 +74,11 @@ export const TutoresList: React.FC<TutoresListProps> = ({
                     {tutores.map(tutor => (
                         <tr key={tutor.id}>
                             <td>{tutor.nome}</td>
-                            <td>{tutor.endereco}</td>
+                            <td>{tutor.cep}</td>
+                            <td>{tutor.enderecoCompleto || tutor.endereco}</td>
+                            <td>{tutor.bairro}</td>
+                            <td>{tutor.cidade}</td>
+                            <td>{tutor.uf}</td>
                             <td>{tutor.telefone}</td>
                             <td>
                                 <div className="btn-group btn-group-sm">

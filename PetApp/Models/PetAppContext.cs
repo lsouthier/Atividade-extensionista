@@ -82,10 +82,31 @@ namespace PetApp.Models
 
                 entity.Property(t => t.Endereco)
                     .IsRequired()
+                    .HasMaxLength(300);
+
+                entity.Property(t => t.Cep)
+                    .HasMaxLength(9);
+
+                entity.Property(t => t.Logradouro)
+                    .HasMaxLength(200);
+
+                entity.Property(t => t.Numero)
+                    .HasMaxLength(20);
+
+                entity.Property(t => t.Complemento)
                     .HasMaxLength(100);
 
+                entity.Property(t => t.Bairro)
+                    .HasMaxLength(100);
+
+                entity.Property(t => t.Cidade)
+                    .HasMaxLength(100);
+
+                entity.Property(t => t.Uf)
+                    .HasMaxLength(2);
+
                 entity.Property(t => t.Telefone)
-                    .HasMaxLength(15);
+                    .HasMaxLength(20);
 
                 entity.HasCheckConstraint(
                     "CK_Tutores_Nome_NotEmpty",
