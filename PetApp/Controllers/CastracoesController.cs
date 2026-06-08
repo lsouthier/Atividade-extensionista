@@ -100,7 +100,11 @@ namespace PetApp.Controllers
                 await _context.SaveChangesAsync();
 
                 animal.IdCastracao = castracao.Id;
-                animal.EhCastrado = CastracaoJaRealizada(dataCastracaoUtc);
+
+                if (CastracaoJaRealizada(dataCastracaoUtc))
+                {
+                    animal.EhCastrado = true;
+                }
 
                 await _context.SaveChangesAsync();
                 await transaction.CommitAsync();
@@ -184,11 +188,11 @@ namespace PetApp.Controllers
             {
                 await _context.SaveChangesAsync();
 
-                await RecalcularStatusCastracaoAnimalAsync(idAnimalAnterior);
+                await AtualizarStatusCastracaoAnimalSemDesmarcarAsync(idAnimalAnterior);
 
                 if (idAnimalAnterior != dto.IdAnimal)
                 {
-                    await RecalcularStatusCastracaoAnimalAsync(dto.IdAnimal);
+                    await AtualizarStatusCastracaoAnimalSemDesmarcarAsync(dto.IdAnimal);
                 }
 
                 await _context.SaveChangesAsync();
@@ -229,7 +233,7 @@ namespace PetApp.Controllers
                 _context.Castracoes.Remove(castracao);
                 await _context.SaveChangesAsync();
 
-                await RecalcularStatusCastracaoAnimalAsync(idAnimal);
+                await AtualizarIdCastracaoPrincipalAsync(idAnimal);
 
                 await _context.SaveChangesAsync();
                 await transaction.CommitAsync();
@@ -285,7 +289,7 @@ namespace PetApp.Controllers
             return dataCastracaoUtc <= DateTime.UtcNow;
         }
 
-        private async Task RecalcularStatusCastracaoAnimalAsync(int idAnimal)
+        private async Task AtualizarStatusCastracaoAnimalSemDesmarcarAsync(int idAnimal)
         {
             var animal = await _context.Animais.FindAsync(idAnimal);
             if (animal == null)
@@ -301,7 +305,27 @@ namespace PetApp.Controllers
             var castracaoPrincipal = castracoes.FirstOrDefault();
 
             animal.IdCastracao = castracaoPrincipal?.Id ?? 0;
-            animal.EhCastrado = castracoes.Any(c => c.DataCastracao <= DateTime.UtcNow);
+
+            if (castracoes.Any(c => c.DataCastracao <= DateTime.UtcNow))
+            {
+                animal.EhCastrado = true;
+            }
+        }
+
+        private async Task AtualizarIdCastracaoPrincipalAsync(int idAnimal)
+        {
+            var animal = await _context.Animais.FindAsync(idAnimal);
+            if (animal == null)
+            {
+                return;
+            }
+
+            var castracaoPrincipal = await _context.Castracoes
+                .Where(c => c.IdAnimal == idAnimal)
+                .OrderByDescending(c => c.DataCastracao)
+                .FirstOrDefaultAsync();
+
+            animal.IdCastracao = castracaoPrincipal?.Id ?? 0;
         }
     }
 }
