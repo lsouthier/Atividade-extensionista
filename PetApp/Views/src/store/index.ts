@@ -6,7 +6,6 @@ import castracoeReducer from './castracoeSlice';
 import authReducer from './authSlice';
 import usuariosReducer from './usuariosSlice';
 import auditoriaReducer from './auditoriaSlice';
-import { debugMiddleware } from './middleware/debugMiddleware';
 
 export const store = configureStore({
     reducer: {
@@ -18,8 +17,7 @@ export const store = configureStore({
         usuarios: usuariosReducer,
         auditoria: auditoriaReducer
     },
-    middleware: (getDefaultMiddleware) =>
-        getDefaultMiddleware().concat(debugMiddleware)
+    middleware: (getDefaultMiddleware) => getDefaultMiddleware()
 });
 
 export type RootState = ReturnType<typeof store.getState>;

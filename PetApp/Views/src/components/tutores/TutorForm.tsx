@@ -27,7 +27,6 @@ export const TutorForm: React.FC<TutorFormProps> = ({ tutor, onSubmit, onCancel 
 
     useEffect(() => {
         if (tutor) {
-            console.log('📝 Editando tutor:', tutor);
             setForm({
                 id: tutor.id,
                 nome: tutor.nome,
@@ -35,7 +34,6 @@ export const TutorForm: React.FC<TutorFormProps> = ({ tutor, onSubmit, onCancel 
                 telefone: tutor.telefone
             });
         } else {
-            console.log('✨ Criando novo tutor');
             setForm(initialForm);
         }
     }, [tutor]);
@@ -76,8 +74,6 @@ export const TutorForm: React.FC<TutorFormProps> = ({ tutor, onSubmit, onCancel 
         e.preventDefault();
         setErro(undefined);
 
-        console.log('📤 Validando formulário de tutor...');
-        console.log('Estado do formulário:', form);
 
         // 🔴 Validação rigorosa
         if (!form.nome || !form.nome.trim()) {
@@ -94,7 +90,6 @@ export const TutorForm: React.FC<TutorFormProps> = ({ tutor, onSubmit, onCancel 
 
         // Rejeita telefone vazio ou placeholder
         if (telefoneLimpo === '' || telefoneLimpo === '(99) 99999-9999') {
-            console.log('⚠️ Telefone descartado (vazio ou placeholder)');
         }
 
         const payload: TutorCreate | TutorUpdate = form.id
@@ -110,7 +105,6 @@ export const TutorForm: React.FC<TutorFormProps> = ({ tutor, onSubmit, onCancel 
                   telefone: telefoneLimpo === '(99) 99999-9999' ? '' : telefoneLimpo
               };
 
-        console.log('📨 Payload a enviar:', payload);
 
         try {
             setSalvando(true);
@@ -118,7 +112,6 @@ export const TutorForm: React.FC<TutorFormProps> = ({ tutor, onSubmit, onCancel 
             if (!form.id) {
                 setForm(initialForm);
             }
-            console.log('✓ Tutor salvo com sucesso!');
         } catch (error) {
             console.error('✗ Erro ao salvar:', error);
             setErro('Erro ao salvar tutor.');

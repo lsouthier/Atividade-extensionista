@@ -45,3 +45,17 @@ docker-compose.override.yml
 *.dump
 *.backup
 *.bak
+
+# Local temporary backups
+*.bkp*
+*.bak
+*.old
+*.tmp
+*~
+backup-*/
+backup-datas-br-*/
+
+# Local database exports
+*.sql
+*.dump
+*.backup

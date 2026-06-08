@@ -130,19 +130,5 @@ namespace PetApp.Controllers
             });
         }
 
-        [HttpGet("debug-ip")]
-        public IActionResult DebugIp()
-        {
-            return Ok(new
-            {
-                RemoteIpAddress = HttpContext.Connection.RemoteIpAddress?.ToString(),
-                XRealIp = HttpContext.Request.Headers["X-Real-IP"].ToString(),
-                XForwardedFor = HttpContext.Request.Headers["X-Forwarded-For"].ToString(),
-                XForwardedProto = HttpContext.Request.Headers["X-Forwarded-Proto"].ToString(),
-                XForwardedHost = HttpContext.Request.Headers["X-Forwarded-Host"].ToString(),
-                CfConnectingIp = HttpContext.Request.Headers["CF-Connecting-IP"].ToString(),
-                UserAgent = HttpContext.Request.Headers.UserAgent.ToString()
-            });
-        }
     }
 }
