@@ -1,6 +1,6 @@
 # PetApp ACAT
 
-**Versão atual:** 1.6.5
+**Versão atual:** 1.6.9
 
 Sistema web desenvolvido para apoio ao controle de pets, tutores, clínicas veterinárias, castrações, usuários e registros de auditoria da ACAT, Associação Cuidado Animal de Teutônia.
 
