@@ -517,13 +517,13 @@ export const AnimalForm: React.FC<AnimalFormProps> = ({ animal, onSubmit, onCanc
                                     maxLength={10}
                                 />
                                 <button
-                                    type="button"
-                                    className="btn btn-outline-secondary"
-                                    onClick={abrirCalendario}
-                                    title="Selecionar data"
-                                >
-                                    📅
-                                </button>
+                            type="button"
+                            className="btn btn-outline-secondary position-relative"
+                            onClick={abrirCalendario}
+                            title="Selecionar data"
+                        >
+                            📅
+                        </button>
                                 <input
                                     ref={dataPickerRef}
                                     type="date"
@@ -531,12 +531,15 @@ export const AnimalForm: React.FC<AnimalFormProps> = ({ animal, onSubmit, onCanc
                                     onChange={handleDataPickerChange}
                                     max={obterDataAtualIso()}
                                     style={{
-                                        position: 'absolute',
-                                        width: 1,
-                                        height: 1,
-                                        opacity: 0,
-                                        pointerEvents: 'none'
-                                    }}
+                                position: 'absolute',
+                                right: 0,
+                                top: 0,
+                                width: 44,
+                                height: 34,
+                                opacity: 0,
+                                cursor: 'pointer',
+                                zIndex: 10
+                            }}
                                     tabIndex={-1}
                                     aria-hidden="true"
                                 />

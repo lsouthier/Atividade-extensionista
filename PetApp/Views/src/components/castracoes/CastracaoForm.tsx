@@ -350,7 +350,7 @@ export const CastracaoForm: React.FC<CastracaoFormProps> = ({ onSubmit, onCancel
                         />
                         <button
                             type="button"
-                            className="btn btn-outline-secondary"
+                            className="btn btn-outline-secondary position-relative"
                             onClick={abrirCalendario}
                             title="Selecionar data"
                         >
@@ -363,18 +363,17 @@ export const CastracaoForm: React.FC<CastracaoFormProps> = ({ onSubmit, onCancel
                             onChange={handleDataPickerChange}
                             style={{
                                 position: 'absolute',
-                                width: 1,
-                                height: 1,
+                                right: 0,
+                                top: 0,
+                                width: 44,
+                                height: 34,
                                 opacity: 0,
-                                pointerEvents: 'none'
+                                cursor: 'pointer',
+                                zIndex: 10
                             }}
-                            tabIndex={-1}
-                            aria-hidden="true"
+                            
                         />
                     </div>
-                    <small className="form-text text-muted">
-                        Formato exibido: dd/mm/aaaa. Valor enviado internamente: yyyy-mm-dd.
-                    </small>
                 </div>
 
                 <div className="mb-2">
