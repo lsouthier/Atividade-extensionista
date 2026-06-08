@@ -79,7 +79,7 @@ export const AnimaisList: React.FC<AnimaisListProps> = ({
     onOrdenar
 }) => {
     if (!animais.length) {
-        return <div className="alert alert-secondary">Nenhum animal encontrado para os filtros aplicados.</div>;
+        return <div className="alert alert-secondary">Nenhum pet encontrado para os filtros aplicados.</div>;
     }
 
     return (

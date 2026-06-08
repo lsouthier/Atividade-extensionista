@@ -83,7 +83,7 @@ export const CastracoesList: React.FC<CastracoeListProps> = ({
                 <thead className="table-light">
                     <tr>
                         <Cabecalho campo="data" titulo="Data" ordenarPor={ordenarPor} direcaoOrdenacao={direcaoOrdenacao} onOrdenar={onOrdenar} />
-                        <Cabecalho campo="animal" titulo="Animal" ordenarPor={ordenarPor} direcaoOrdenacao={direcaoOrdenacao} onOrdenar={onOrdenar} />
+                        <Cabecalho campo="animal" titulo="Pet" ordenarPor={ordenarPor} direcaoOrdenacao={direcaoOrdenacao} onOrdenar={onOrdenar} />
                         <Cabecalho campo="clinica" titulo="Clínica" ordenarPor={ordenarPor} direcaoOrdenacao={direcaoOrdenacao} onOrdenar={onOrdenar} />
                         <Cabecalho campo="valor" titulo="Valor" ordenarPor={ordenarPor} direcaoOrdenacao={direcaoOrdenacao} onOrdenar={onOrdenar} />
                         <th style={{ width: 130 }}>Ações</th>
@@ -93,7 +93,7 @@ export const CastracoesList: React.FC<CastracoeListProps> = ({
                     {castracoes.map(castracao => (
                         <tr key={castracao.id}>
                             <td>{formatarDataSemTimezone(castracao.dataCastracao)}</td>
-                            <td>{castracao.nomeAnimal}</td>
+                            <td>{castracao.nomePet}</td>
                             <td>{castracao.nomeClinica}</td>
                             <td>R$ {formatarValor(castracao.valor)}</td>
                             <td>

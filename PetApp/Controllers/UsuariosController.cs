@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -197,7 +198,18 @@ namespace PetApp.Controllers
         [HttpDelete("{id:int}")]
         public async Task<IActionResult> DeleteUsuario(int id)
         {
-            var usuario = await _context.UsuariosSistema.FindAsync(id);
+            
+            var usuarioLogadoIdTexto = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            if (int.TryParse(usuarioLogadoIdTexto, out var usuarioLogadoId) && usuarioLogadoId == id)
+            {
+                return BadRequest(new
+                {
+                    erro = "O usuário logado não pode excluir o próprio usuário."
+                });
+            }
+
+var usuario = await _context.UsuariosSistema.FindAsync(id);
 
             if (usuario == null)
             {

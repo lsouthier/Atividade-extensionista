@@ -131,6 +131,7 @@ const badgePerfil = (perfil: PerfilAcesso): string => {
 export const UsuariosPage: React.FC = () => {
     const dispatch = useDispatch<AppDispatch>();
     const { itens, carregando, erro, selecionado } = useSelector((state: RootState) => state.usuarios);
+    const usuarioLogado = useSelector((state: RootState) => state.auth.usuario);
 
     const [showModal, setShowModal] = useState(false);
     const [form, setForm] = useState<FormState>(initialForm);
@@ -281,6 +282,11 @@ export const UsuariosPage: React.FC = () => {
     };
 
     const excluir = async (usuario: UsuarioSistema) => {
+        if (usuarioLogado?.id === usuario.id) {
+            window.alert('O usuário logado não pode excluir o próprio usuário.');
+            return;
+        }
+
         if (!window.confirm(`Deseja excluir o usuário ${usuario.nomeUsuario}?`)) {
             return;
         }
