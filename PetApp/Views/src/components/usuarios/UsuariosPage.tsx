@@ -19,12 +19,81 @@ interface FormState {
     ativo: boolean;
 }
 
+type UsuarioOrdenacaoCampo = 'nomeUsuario' | 'nome' | 'status' | 'criadoEmUtc';
+type OrdenacaoDirecao = 'asc' | 'desc';
+
 const initialForm: FormState = {
     nomeUsuario: '',
     nome: '',
     senha: '',
     ativo: true
 };
+
+const normalizarTexto = (valor?: string | null): string => {
+    return (valor ?? '')
+        .toString()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase()
+        .trim();
+};
+
+const formatarDataHora = (data?: string | null): string => {
+    if (!data) {
+        return '-';
+    }
+
+    return new Date(data).toLocaleString('pt-BR');
+};
+
+const obterValorOrdenacao = (
+    usuario: UsuarioSistema,
+    campo: UsuarioOrdenacaoCampo
+): string | number => {
+    switch (campo) {
+        case 'nomeUsuario':
+            return normalizarTexto(usuario.nomeUsuario);
+        case 'nome':
+            return normalizarTexto(usuario.nome);
+        case 'status':
+            return usuario.ativo ? 1 : 0;
+        case 'criadoEmUtc':
+            return usuario.criadoEmUtc ? new Date(usuario.criadoEmUtc).getTime() : 0;
+        default:
+            return normalizarTexto(usuario.nomeUsuario);
+    }
+};
+
+const indicador = (
+    campo: UsuarioOrdenacaoCampo,
+    ordenarPor: UsuarioOrdenacaoCampo,
+    direcao: OrdenacaoDirecao
+): string => {
+    if (campo !== ordenarPor) {
+        return '↕';
+    }
+
+    return direcao === 'asc' ? '↑' : '↓';
+};
+
+const CabecalhoOrdenavel: React.FC<{
+    campo: UsuarioOrdenacaoCampo;
+    titulo: string;
+    ordenarPor: UsuarioOrdenacaoCampo;
+    direcaoOrdenacao: OrdenacaoDirecao;
+    onOrdenar: (campo: UsuarioOrdenacaoCampo) => void;
+}> = ({ campo, titulo, ordenarPor, direcaoOrdenacao, onOrdenar }) => (
+    <th>
+        <button
+            type="button"
+            className="btn btn-link btn-sm p-0 text-decoration-none fw-semibold text-dark"
+            onClick={() => onOrdenar(campo)}
+            title={`Ordenar por ${titulo}`}
+        >
+            {titulo} {indicador(campo, ordenarPor, direcaoOrdenacao)}
+        </button>
+    </th>
+);
 
 export const UsuariosPage: React.FC = () => {
     const dispatch = useDispatch<AppDispatch>();
@@ -35,11 +104,56 @@ export const UsuariosPage: React.FC = () => {
     const [pagina, setPagina] = useState(1);
     const [tamanhoPagina, setTamanhoPagina] = useState(10);
 
+    const [pesquisa, setPesquisa] = useState('');
+    const [filtroStatus, setFiltroStatus] = useState('');
+    const [ordenarPor, setOrdenarPor] = useState<UsuarioOrdenacaoCampo>('nomeUsuario');
+    const [direcaoOrdenacao, setDirecaoOrdenacao] = useState<OrdenacaoDirecao>('asc');
+
     useEffect(() => {
         dispatch(carregarUsuarios());
     }, [dispatch]);
 
-    const totalPaginas = Math.max(1, Math.ceil(itens.length / tamanhoPagina));
+    const usuariosFiltradosOrdenados = useMemo(() => {
+        const termo = normalizarTexto(pesquisa);
+
+        const filtrados = itens.filter(usuario => {
+            const textoBusca = [
+                usuario.nomeUsuario,
+                usuario.nome
+            ]
+                .map(normalizarTexto)
+                .join(' ');
+
+            const atendePesquisa = !termo || textoBusca.includes(termo);
+
+            const atendeStatus =
+                !filtroStatus ||
+                (filtroStatus === 'ativo' && usuario.ativo) ||
+                (filtroStatus === 'inativo' && !usuario.ativo);
+
+            return atendePesquisa && atendeStatus;
+        });
+
+        return [...filtrados].sort((a, b) => {
+            const valorA = obterValorOrdenacao(a, ordenarPor);
+            const valorB = obterValorOrdenacao(b, ordenarPor);
+
+            if (typeof valorA === 'number' && typeof valorB === 'number') {
+                return direcaoOrdenacao === 'asc'
+                    ? valorA - valorB
+                    : valorB - valorA;
+            }
+
+            const comparacao = String(valorA).localeCompare(String(valorB), 'pt-BR', {
+                numeric: true,
+                sensitivity: 'base'
+            });
+
+            return direcaoOrdenacao === 'asc' ? comparacao : comparacao * -1;
+        });
+    }, [itens, pesquisa, filtroStatus, ordenarPor, direcaoOrdenacao]);
+
+    const totalPaginas = Math.max(1, Math.ceil(usuariosFiltradosOrdenados.length / tamanhoPagina));
 
     useEffect(() => {
         if (pagina > totalPaginas) {
@@ -47,10 +161,14 @@ export const UsuariosPage: React.FC = () => {
         }
     }, [pagina, totalPaginas]);
 
+    useEffect(() => {
+        setPagina(1);
+    }, [pesquisa, filtroStatus, ordenarPor, direcaoOrdenacao]);
+
     const usuariosPaginados = useMemo(() => {
         const inicio = (pagina - 1) * tamanhoPagina;
-        return itens.slice(inicio, inicio + tamanhoPagina);
-    }, [itens, pagina, tamanhoPagina]);
+        return usuariosFiltradosOrdenados.slice(inicio, inicio + tamanhoPagina);
+    }, [usuariosFiltradosOrdenados, pagina, tamanhoPagina]);
 
     const abrirNovo = () => {
         dispatch(selecionarUsuario(null));
@@ -119,14 +237,77 @@ export const UsuariosPage: React.FC = () => {
         setPagina(1);
     };
 
+    const handleOrdenar = (campo: UsuarioOrdenacaoCampo) => {
+        if (ordenarPor === campo) {
+            setDirecaoOrdenacao(direcaoOrdenacao === 'asc' ? 'desc' : 'asc');
+            return;
+        }
+
+        setOrdenarPor(campo);
+        setDirecaoOrdenacao(campo === 'criadoEmUtc' ? 'desc' : 'asc');
+    };
+
+    const limparFiltros = () => {
+        setPesquisa('');
+        setFiltroStatus('');
+        setOrdenarPor('nomeUsuario');
+        setDirecaoOrdenacao('asc');
+        setPagina(1);
+    };
+
     return (
         <div className="row">
             <div className="col-12 mb-4">
                 <div className="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
-                    <h2 className="h4 mb-0">Gestão de Usuários</h2>
+                    <div>
+                        <h2 className="h4 mb-0">Gestão de Usuários</h2>
+                        <small className="text-muted">
+                            {usuariosFiltradosOrdenados.length} de {itens.length} usuários exibidos.
+                        </small>
+                    </div>
+
                     <button className="btn btn-primary btn-sm" onClick={abrirNovo}>
                         Novo Usuário
                     </button>
+                </div>
+
+                <div className="card mb-3">
+                    <div className="card-body">
+                        <div className="row g-2">
+                            <div className="col-md-7">
+                                <label className="form-label">Pesquisar</label>
+                                <input
+                                    className="form-control form-control-sm"
+                                    value={pesquisa}
+                                    onChange={(e) => setPesquisa(e.target.value)}
+                                    placeholder="Usuário ou nome"
+                                />
+                            </div>
+
+                            <div className="col-md-3">
+                                <label className="form-label">Status</label>
+                                <select
+                                    className="form-select form-select-sm"
+                                    value={filtroStatus}
+                                    onChange={(e) => setFiltroStatus(e.target.value)}
+                                >
+                                    <option value="">Todos</option>
+                                    <option value="ativo">Ativo</option>
+                                    <option value="inativo">Inativo</option>
+                                </select>
+                            </div>
+
+                            <div className="col-md-2 d-flex align-items-end">
+                                <button
+                                    className="btn btn-outline-secondary btn-sm w-100"
+                                    type="button"
+                                    onClick={limparFiltros}
+                                >
+                                    Limpar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 {carregando && <div className="alert alert-info">Carregando...</div>}
@@ -136,9 +317,34 @@ export const UsuariosPage: React.FC = () => {
                     <table className="table table-sm table-striped align-middle">
                         <thead className="table-light">
                             <tr>
-                                <th>Usuário</th>
-                                <th>Nome</th>
-                                <th>Status</th>
+                                <CabecalhoOrdenavel
+                                    campo="nomeUsuario"
+                                    titulo="Usuário"
+                                    ordenarPor={ordenarPor}
+                                    direcaoOrdenacao={direcaoOrdenacao}
+                                    onOrdenar={handleOrdenar}
+                                />
+                                <CabecalhoOrdenavel
+                                    campo="nome"
+                                    titulo="Nome"
+                                    ordenarPor={ordenarPor}
+                                    direcaoOrdenacao={direcaoOrdenacao}
+                                    onOrdenar={handleOrdenar}
+                                />
+                                <CabecalhoOrdenavel
+                                    campo="status"
+                                    titulo="Status"
+                                    ordenarPor={ordenarPor}
+                                    direcaoOrdenacao={direcaoOrdenacao}
+                                    onOrdenar={handleOrdenar}
+                                />
+                                <CabecalhoOrdenavel
+                                    campo="criadoEmUtc"
+                                    titulo="Criado em"
+                                    ordenarPor={ordenarPor}
+                                    direcaoOrdenacao={direcaoOrdenacao}
+                                    onOrdenar={handleOrdenar}
+                                />
                                 <th style={{ width: 130 }}>Ações</th>
                             </tr>
                         </thead>
@@ -154,16 +360,19 @@ export const UsuariosPage: React.FC = () => {
                                             <span className="badge bg-secondary">Inativo</span>
                                         )}
                                     </td>
+                                    <td>{formatarDataHora(usuario.criadoEmUtc)}</td>
                                     <td>
                                         <div className="btn-group btn-group-sm">
                                             <button
                                                 className="btn btn-outline-primary"
+                                                type="button"
                                                 onClick={() => abrirEditar(usuario)}
                                             >
                                                 Editar
                                             </button>
                                             <button
                                                 className="btn btn-outline-danger"
+                                                type="button"
                                                 onClick={() => excluir(usuario)}
                                             >
                                                 Excluir
@@ -176,15 +385,15 @@ export const UsuariosPage: React.FC = () => {
                     </table>
                 </div>
 
-                {!itens.length && !carregando && (
-                    <div className="alert alert-secondary">Nenhum usuário cadastrado.</div>
+                {!usuariosFiltradosOrdenados.length && !carregando && (
+                    <div className="alert alert-secondary">Nenhum usuário encontrado para os filtros aplicados.</div>
                 )}
 
-                {itens.length > 0 && (
+                {usuariosFiltradosOrdenados.length > 0 && (
                     <Paginacao
                         pagina={pagina}
                         tamanhoPagina={tamanhoPagina}
-                        totalRegistros={itens.length}
+                        totalRegistros={usuariosFiltradosOrdenados.length}
                         onMudarPagina={setPagina}
                         onMudarTamanhoPagina={handleMudarTamanhoPagina}
                     />

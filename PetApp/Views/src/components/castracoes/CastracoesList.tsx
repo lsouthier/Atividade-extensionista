@@ -1,10 +1,16 @@
 import React from 'react';
 import { Castracao } from '../../api/castracoeApi';
 
+export type CastracaoOrdenacaoCampo = 'data' | 'animal' | 'clinica' | 'valor';
+export type OrdenacaoDirecao = 'asc' | 'desc';
+
 interface CastracoeListProps {
     castracoes: Castracao[];
     onEditar: (castracao: Castracao) => void;
     onExcluir: (id: number) => void;
+    ordenarPor: CastracaoOrdenacaoCampo;
+    direcaoOrdenacao: OrdenacaoDirecao;
+    onOrdenar: (campo: CastracaoOrdenacaoCampo) => void;
 }
 
 const formatarDataSemTimezone = (data: string): string => {
@@ -29,13 +35,46 @@ const formatarValor = (valor: number): string => {
     });
 };
 
+const indicador = (
+    campo: CastracaoOrdenacaoCampo,
+    ordenarPor: CastracaoOrdenacaoCampo,
+    direcao: OrdenacaoDirecao
+): string => {
+    if (campo !== ordenarPor) {
+        return '↕';
+    }
+
+    return direcao === 'asc' ? '↑' : '↓';
+};
+
+const Cabecalho: React.FC<{
+    campo: CastracaoOrdenacaoCampo;
+    titulo: string;
+    ordenarPor: CastracaoOrdenacaoCampo;
+    direcaoOrdenacao: OrdenacaoDirecao;
+    onOrdenar: (campo: CastracaoOrdenacaoCampo) => void;
+}> = ({ campo, titulo, ordenarPor, direcaoOrdenacao, onOrdenar }) => (
+    <th>
+        <button
+            type="button"
+            className="btn btn-link btn-sm p-0 text-decoration-none fw-semibold text-dark"
+            onClick={() => onOrdenar(campo)}
+        >
+            {titulo} {indicador(campo, ordenarPor, direcaoOrdenacao)}
+        </button>
+    </th>
+);
+
 export const CastracoesList: React.FC<CastracoeListProps> = ({
     castracoes,
     onEditar,
-    onExcluir
+    onExcluir,
+    ordenarPor,
+    direcaoOrdenacao,
+    onOrdenar
 }) => {
     if (!castracoes.length) {
-        return <div className="alert alert-secondary">Nenhuma castração cadastrada.</div>;
+        return <div className="alert alert-secondary">Nenhuma castração encontrada para os filtros aplicados.</div>;
     }
 
     return (
@@ -43,10 +82,10 @@ export const CastracoesList: React.FC<CastracoeListProps> = ({
             <table className="table table-sm table-striped align-middle">
                 <thead className="table-light">
                     <tr>
-                        <th>Data</th>
-                        <th>Animal</th>
-                        <th>Clínica</th>
-                        <th>Valor</th>
+                        <Cabecalho campo="data" titulo="Data" ordenarPor={ordenarPor} direcaoOrdenacao={direcaoOrdenacao} onOrdenar={onOrdenar} />
+                        <Cabecalho campo="animal" titulo="Animal" ordenarPor={ordenarPor} direcaoOrdenacao={direcaoOrdenacao} onOrdenar={onOrdenar} />
+                        <Cabecalho campo="clinica" titulo="Clínica" ordenarPor={ordenarPor} direcaoOrdenacao={direcaoOrdenacao} onOrdenar={onOrdenar} />
+                        <Cabecalho campo="valor" titulo="Valor" ordenarPor={ordenarPor} direcaoOrdenacao={direcaoOrdenacao} onOrdenar={onOrdenar} />
                         <th style={{ width: 130 }}>Ações</th>
                     </tr>
                 </thead>
