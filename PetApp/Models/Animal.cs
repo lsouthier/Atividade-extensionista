@@ -14,6 +14,8 @@ namespace PetApp.Models
 
         public int Idade { get; set; }
 
+        public DateTime? DataNascimento { get; set; }
+
         public decimal Peso { get; set; }
 
         public int IdTutor { get; set; }

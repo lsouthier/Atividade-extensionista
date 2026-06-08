@@ -12,6 +12,8 @@ export interface Animal {
     raca: string;
     sexo: string;
     idade: number;
+    dataNascimento?: string | null;
+    idadeDescricao?: string | null;
     peso: number;
     idTutor: number;
     tutor: Tutor;
@@ -24,6 +26,7 @@ export interface AnimalCreate {
     raca: string;
     sexo: string;
     idade: number;
+    dataNascimento?: string | null;
     peso: number;
     idTutor: number;
     ehCastrado: boolean;

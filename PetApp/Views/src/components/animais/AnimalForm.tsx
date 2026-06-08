@@ -1,15 +1,14 @@
-﻿import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import type { RootState, AppDispatch } from '../../store';
 import { carregarTutores } from '../../store/tutoresSlice';
 import { Animal, AnimalCreate, AnimalUpdate } from '../../api/animaisApi';
-import { Tutor } from '../../api/tutoresApi';
 
 interface AnimalFormProps {
     animal?: Animal;
     onSubmit: (dados: AnimalCreate | AnimalUpdate) => void | Promise<void>;
     onCancel?: () => void;
-    mode?: 'animal' | 'castracao'; // Novo: modo de formulário
+    mode?: 'animal' | 'castracao';
 }
 
 interface FormState {
@@ -19,6 +18,8 @@ interface FormState {
     raca: string;
     sexo: string;
     idade: number | '';
+    dataNascimentoIso: string;
+    dataNascimentoBr: string;
     peso: number | '';
     idTutor: number;
     ehCastrado: boolean;
@@ -30,12 +31,176 @@ const initialForm: FormState = {
     raca: '',
     sexo: '',
     idade: '',
+    dataNascimentoIso: '',
+    dataNascimentoBr: '',
     peso: '',
     idTutor: 0,
     ehCastrado: false
 };
 
-export const AnimalForm: React.FC<AnimalFormProps> = ({ animal, onSubmit, onCancel, mode }) => {
+const obterDataAtualIso = (): string => {
+    const hoje = new Date();
+    const ano = hoje.getFullYear();
+    const mes = String(hoje.getMonth() + 1).padStart(2, '0');
+    const dia = String(hoje.getDate()).padStart(2, '0');
+
+    return `${ano}-${mes}-${dia}`;
+};
+
+const aplicarMascaraDataBr = (valor: string): string => {
+    const numeros = valor.replace(/\D/g, '').slice(0, 8);
+
+    if (numeros.length <= 2) {
+        return numeros;
+    }
+
+    if (numeros.length <= 4) {
+        return `${numeros.slice(0, 2)}/${numeros.slice(2)}`;
+    }
+
+    return `${numeros.slice(0, 2)}/${numeros.slice(2, 4)}/${numeros.slice(4)}`;
+};
+
+const formatarIsoParaBr = (dataIso: string): string => {
+    if (!dataIso) {
+        return '';
+    }
+
+    const somenteData = dataIso.split('T')[0];
+    const [ano, mes, dia] = somenteData.split('-');
+
+    if (!ano || !mes || !dia) {
+        return '';
+    }
+
+    return `${dia}/${mes}/${ano}`;
+};
+
+const converterBrParaIso = (dataBr: string): string => {
+    const match = dataBr.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+
+    if (!match) {
+        return '';
+    }
+
+    const [, dia, mes, ano] = match;
+    const data = new Date(Number(ano), Number(mes) - 1, Number(dia));
+
+    const dataValida =
+        data.getFullYear() === Number(ano) &&
+        data.getMonth() === Number(mes) - 1 &&
+        data.getDate() === Number(dia);
+
+    if (!dataValida) {
+        return '';
+    }
+
+    return `${ano}-${mes}-${dia}`;
+};
+
+const normalizarDataApiParaIso = (data?: string | null): string => {
+    if (!data) {
+        return '';
+    }
+
+    const somenteData = data.split('T')[0];
+    const [ano, mes, dia] = somenteData.split('-');
+
+    if (!ano || !mes || !dia) {
+        return '';
+    }
+
+    return `${ano}-${mes}-${dia}`;
+};
+
+const calcularIdade = (dataIso: string): { anos: number; meses: number; descricao: string } => {
+    if (!dataIso) {
+        return {
+            anos: 0,
+            meses: 0,
+            descricao: 'informe a data de nascimento'
+        };
+    }
+
+    const [ano, mes, dia] = dataIso.split('-').map(Number);
+
+    if (!ano || !mes || !dia) {
+        return {
+            anos: 0,
+            meses: 0,
+            descricao: 'data inválida'
+        };
+    }
+
+    const nascimento = new Date(ano, mes - 1, dia);
+    const hoje = new Date();
+
+    if (nascimento > hoje) {
+        return {
+            anos: 0,
+            meses: 0,
+            descricao: 'data futura'
+        };
+    }
+
+    let anos = hoje.getFullYear() - nascimento.getFullYear();
+    let meses = hoje.getMonth() - nascimento.getMonth();
+
+    if (hoje.getDate() < nascimento.getDate()) {
+        meses--;
+    }
+
+    if (meses < 0) {
+        anos--;
+        meses += 12;
+    }
+
+    anos = Math.max(anos, 0);
+    meses = Math.max(meses, 0);
+
+    if (anos === 0 && meses === 0) {
+        return {
+            anos,
+            meses,
+            descricao: 'menos de 1 mês'
+        };
+    }
+
+    if (anos === 0) {
+        return {
+            anos,
+            meses,
+            descricao: meses === 1 ? '1 mês' : `${meses} meses`
+        };
+    }
+
+    if (meses === 0) {
+        return {
+            anos,
+            meses,
+            descricao: anos === 1 ? '1 ano' : `${anos} anos`
+        };
+    }
+
+    const textoAnos = anos === 1 ? '1 ano' : `${anos} anos`;
+    const textoMeses = meses === 1 ? '1 mês' : `${meses} meses`;
+
+    return {
+        anos,
+        meses,
+        descricao: `${textoAnos} e ${textoMeses}`
+    };
+};
+
+const converterIsoParaApi = (dataIso: string): string | null => {
+    if (!dataIso) {
+        return null;
+    }
+
+    return `${dataIso}T00:00:00`;
+};
+
+export const AnimalForm: React.FC<AnimalFormProps> = ({ animal, onSubmit, onCancel }) => {
     const dispatch = useDispatch<AppDispatch>();
     const { itens: tutores, carregando: tutoresCarregando } = useSelector(
         (state: RootState) => state.tutores
@@ -44,22 +209,23 @@ export const AnimalForm: React.FC<AnimalFormProps> = ({ animal, onSubmit, onCanc
     const [form, setForm] = useState<FormState>(initialForm);
     const [salvando, setSalvando] = useState(false);
     const [erro, setErro] = useState<string | undefined>();
+    const dataPickerRef = useRef<HTMLInputElement>(null);
 
-    // Efeito 1: Carregar tutores do Redux apenas uma vez
+    const idadeCalculada = useMemo(
+        () => calcularIdade(form.dataNascimentoIso),
+        [form.dataNascimentoIso]
+    );
+
     useEffect(() => {
-        console.log('📥 AnimalForm montado - verificando tutores no Redux...');
         if (tutores.length === 0 && !tutoresCarregando) {
-            console.log('⬇️ Carregando tutores do Redux...');
             dispatch(carregarTutores());
-        } else {
-            console.log('✓ Tutores já disponíveis:', tutores);
         }
-    }, [dispatch]);
+    }, [dispatch, tutores.length, tutoresCarregando]);
 
-    // Efeito 2: Preencher formulário com dados do animal ou resetar
     useEffect(() => {
         if (animal) {
-            console.log('📝 Editando animal:', animal);
+            const dataNascimentoIso = normalizarDataApiParaIso(animal.dataNascimento);
+
             setForm({
                 id: animal.id,
                 nome: animal.nome,
@@ -67,14 +233,17 @@ export const AnimalForm: React.FC<AnimalFormProps> = ({ animal, onSubmit, onCanc
                 raca: animal.raca,
                 sexo: animal.sexo,
                 idade: animal.idade,
+                dataNascimentoIso,
+                dataNascimentoBr: formatarIsoParaBr(dataNascimentoIso),
                 peso: animal.peso,
                 idTutor: animal.idTutor,
                 ehCastrado: animal.ehCastrado || false
             });
-        } else {
-            console.log('✨ Criando novo animal');
-            setForm(initialForm);
+
+            return;
         }
+
+        setForm(initialForm);
     }, [animal]);
 
     const handleChange = (
@@ -85,12 +254,10 @@ export const AnimalForm: React.FC<AnimalFormProps> = ({ animal, onSubmit, onCanc
 
         if (type === 'checkbox') {
             newValue = (e.target as HTMLInputElement).checked;
-        } else if (name === 'idade' || name === 'peso') {
+        } else if (name === 'peso') {
             newValue = value === '' ? '' : Number(value);
         } else if (name === 'idTutor') {
-            const numValue = value ? Number(value) : 0;
-            console.log(`🔄 idTutor alterado para: ${numValue} (valor bruto: ${value})`);
-            newValue = numValue;
+            newValue = value ? Number(value) : 0;
         }
 
         setForm(prev => ({
@@ -99,94 +266,120 @@ export const AnimalForm: React.FC<AnimalFormProps> = ({ animal, onSubmit, onCanc
         }));
     };
 
+    const handleDataNascimentoBrChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const valorBr = aplicarMascaraDataBr(e.target.value);
+        const valorIso = converterBrParaIso(valorBr);
+
+        setForm(prev => ({
+            ...prev,
+            dataNascimentoBr: valorBr,
+            dataNascimentoIso: valorIso,
+            idade: valorIso ? calcularIdade(valorIso).anos : ''
+        }));
+    };
+
+    const handleDataPickerChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const valorIso = e.target.value;
+
+        setForm(prev => ({
+            ...prev,
+            dataNascimentoIso: valorIso,
+            dataNascimentoBr: formatarIsoParaBr(valorIso),
+            idade: valorIso ? calcularIdade(valorIso).anos : ''
+        }));
+    };
+
+    const abrirCalendario = () => {
+        const picker = dataPickerRef.current as HTMLInputElement & {
+            showPicker?: () => void;
+        };
+
+        if (!picker) {
+            return;
+        }
+
+        if (typeof picker.showPicker === 'function') {
+            picker.showPicker();
+            return;
+        }
+
+        picker.click();
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setErro(undefined);
 
-        // Validações rigorosas
-        console.log('📤 Iniciando validação do formulário...');
-        console.log('Estado do formulário:', form);
-
         if (!form.nome?.trim()) {
-            const msg = 'Nome do animal é obrigatório.';
-            console.error('❌', msg);
-            setErro(msg);
+            setErro('Nome do animal é obrigatório.');
             return;
         }
 
         if (!form.especie?.trim()) {
-            const msg = 'Espécie é obrigatória.';
-            console.error('❌', msg);
-            setErro(msg);
+            setErro('Espécie é obrigatória.');
             return;
         }
 
         if (!form.raca?.trim()) {
-            const msg = 'Raça é obrigatória.';
-            console.error('❌', msg);
-            setErro(msg);
+            setErro('Raça é obrigatória.');
             return;
         }
 
         if (!form.sexo) {
-            const msg = 'Sexo é obrigatório.';
-            console.error('❌', msg);
-            setErro(msg);
+            setErro('Sexo é obrigatório.');
+            return;
+        }
+
+        if (form.dataNascimentoBr && !form.dataNascimentoIso) {
+            setErro('Data de nascimento inválida. Use o formato dd/mm/aaaa.');
             return;
         }
 
         if (!form.idTutor || form.idTutor <= 0) {
-            const msg = `Selecione um tutor válido. ID recebido: ${form.idTutor}`;
-            console.error('❌', msg);
-            setErro(msg);
+            setErro(`Selecione um tutor válido. ID recebido: ${form.idTutor}`);
             return;
         }
 
-        // Verifica se o tutor selecionado existe na lista
         const tutorValido = tutores.find(t => t.id === form.idTutor);
+
         if (!tutorValido) {
-            const msg = `Tutor com ID ${form.idTutor} não encontrado na lista de tutores válidos.`;
-            console.error('❌', msg);
-            setErro(msg);
+            setErro(`Tutor com ID ${form.idTutor} não encontrado na lista de tutores válidos.`);
             return;
         }
 
-        console.log('✓ Validação passou! Tutor selecionado:', tutorValido);
+        const idadeParaSalvar = form.dataNascimentoIso
+            ? idadeCalculada.anos
+            : form.idade
+              ? Number(form.idade)
+              : 0;
+
+        const payloadBase = {
+            nome: form.nome.trim(),
+            especie: form.especie.trim(),
+            raca: form.raca.trim(),
+            sexo: form.sexo,
+            idade: idadeParaSalvar,
+            dataNascimento: converterIsoParaApi(form.dataNascimentoIso),
+            peso: form.peso ? Number(form.peso) : 0,
+            idTutor: form.idTutor,
+            ehCastrado: form.ehCastrado
+        };
 
         const payload: AnimalCreate | AnimalUpdate = form.id
             ? {
                   id: form.id,
-                  nome: form.nome.trim(),
-                  especie: form.especie.trim(),
-                  raca: form.raca.trim(),
-                  sexo: form.sexo,
-                  idade: form.idade ? Number(form.idade) : 0,
-                  peso: form.peso ? Number(form.peso) : 0,
-                  idTutor: form.idTutor,
-                  ehCastrado: form.ehCastrado
+                  ...payloadBase
               }
-            : {
-                  nome: form.nome.trim(),
-                  especie: form.especie.trim(),
-                  raca: form.raca.trim(),
-                  sexo: form.sexo,
-                  idade: form.idade ? Number(form.idade) : 0,
-                  peso: form.peso ? Number(form.peso) : 0,
-                  idTutor: form.idTutor,
-                  ehCastrado: form.ehCastrado
-              };
-
-        console.log('📨 Payload a enviar:', payload);
+            : payloadBase;
 
         try {
             setSalvando(true);
             await onSubmit(payload);
+
             if (!form.id) {
                 setForm(initialForm);
             }
-            console.log('✓ Animal salvo com sucesso!');
-        } catch (error) {
-            console.error('✗ Erro ao salvar:', error);
+        } catch {
             setErro('Erro ao salvar animal. Tente novamente.');
         } finally {
             setSalvando(false);
@@ -194,13 +387,13 @@ export const AnimalForm: React.FC<AnimalFormProps> = ({ animal, onSubmit, onCanc
     };
 
     if (tutoresCarregando) {
-        return <div className="alert alert-info">⏳ Carregando tutores...</div>;
+        return <div className="alert alert-info">Carregando tutores...</div>;
     }
 
     if (tutores.length === 0) {
         return (
             <div className="alert alert-warning">
-                ⚠️ Nenhum tutor disponível. Crie um tutor antes de adicionar um animal.
+                Nenhum tutor disponível. Crie um tutor antes de adicionar um animal.
             </div>
         );
     }
@@ -208,7 +401,7 @@ export const AnimalForm: React.FC<AnimalFormProps> = ({ animal, onSubmit, onCanc
     return (
         <form onSubmit={handleSubmit} className="card">
             <div className="card-body">
-                {erro && <div className="alert alert-danger">❌ {erro}</div>}
+                {erro && <div className="alert alert-danger">{erro}</div>}
 
                 <div className="mb-2">
                     <label className="form-label">Nome *</label>
@@ -225,15 +418,18 @@ export const AnimalForm: React.FC<AnimalFormProps> = ({ animal, onSubmit, onCanc
 
                 <div className="mb-2">
                     <label className="form-label">Espécie *</label>
-                    <input
-                        type="text"
+                    <select
                         name="especie"
-                        className="form-control form-control-sm"
+                        className="form-select form-select-sm"
                         value={form.especie}
                         onChange={handleChange}
-                        maxLength={25}
                         required
-                    />
+                    >
+                        <option value="">Selecione...</option>
+                        <option value="Felina">Felina</option>
+                        <option value="Canina">Canina</option>
+                        <option value="Outros">Outros</option>
+                    </select>
                 </div>
 
                 <div className="mb-2">
@@ -280,17 +476,48 @@ export const AnimalForm: React.FC<AnimalFormProps> = ({ animal, onSubmit, onCanc
 
                 <div className="row">
                     <div className="col-md-4 mb-2">
-                        <label className="form-label">Idade (anos)</label>
-                        <input
-                            type="number"
-                            name="idade"
-                            className="form-control form-control-sm"
-                            value={form.idade}
-                            onChange={handleChange}
-                            min={0}
-                            max={100}
-                        />
+                        <label className="form-label">Data de nascimento</label>
+                        <div className="input-group input-group-sm">
+                            <input
+                                type="text"
+                                name="dataNascimentoBr"
+                                className="form-control"
+                                value={form.dataNascimentoBr}
+                                onChange={handleDataNascimentoBrChange}
+                                placeholder="dd/mm/aaaa"
+                                inputMode="numeric"
+                                maxLength={10}
+                            />
+                            <button
+                                type="button"
+                                className="btn btn-outline-secondary"
+                                onClick={abrirCalendario}
+                                title="Selecionar data"
+                            >
+                                📅
+                            </button>
+                            <input
+                                ref={dataPickerRef}
+                                type="date"
+                                value={form.dataNascimentoIso}
+                                onChange={handleDataPickerChange}
+                                max={obterDataAtualIso()}
+                                style={{
+                                    position: 'absolute',
+                                    width: 1,
+                                    height: 1,
+                                    opacity: 0,
+                                    pointerEvents: 'none'
+                                }}
+                                tabIndex={-1}
+                                aria-hidden="true"
+                            />
+                        </div>
+                        <small className="form-text text-muted">
+                            Idade calculada: {idadeCalculada.descricao}
+                        </small>
                     </div>
+
                     <div className="col-md-4 mb-2">
                         <label className="form-label">Peso (kg)</label>
                         <input
@@ -304,6 +531,7 @@ export const AnimalForm: React.FC<AnimalFormProps> = ({ animal, onSubmit, onCanc
                             step="0.1"
                         />
                     </div>
+
                     <div className="col-md-4 mb-2">
                         <label className="form-label">Tutor *</label>
                         <select
@@ -343,7 +571,7 @@ export const AnimalForm: React.FC<AnimalFormProps> = ({ animal, onSubmit, onCanc
                     type="submit"
                     disabled={salvando || tutores.length === 0}
                 >
-                    {salvando ? '💾 Salvando...' : '💾 Salvar'}
+                    {salvando ? 'Salvando...' : 'Salvar'}
                 </button>
             </div>
         </form>

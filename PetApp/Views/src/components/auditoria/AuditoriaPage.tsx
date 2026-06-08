@@ -12,13 +12,116 @@ const formatarDataHora = (dataUtc: string): string => {
     return new Date(dataUtc).toLocaleString('pt-BR');
 };
 
+const formatarIsoParaDataBr = (valor: string): string => {
+    if (!valor) {
+        return '';
+    }
+
+    const somenteData = valor.split('T')[0];
+    const [ano, mes, dia] = somenteData.split('-');
+
+    if (!ano || !mes || !dia) {
+        return valor;
+    }
+
+    return `${dia}/${mes}/${ano}`;
+};
+
+const calcularIdadeDescricao = (dataNascimento?: string | null, idade?: number): string => {
+    if (!dataNascimento) {
+        if (idade === undefined || idade === null) {
+            return '-';
+        }
+
+        return idade === 1 ? '1 ano' : `${idade} anos`;
+    }
+
+    const somenteData = dataNascimento.split('T')[0];
+    const [anoTexto, mesTexto, diaTexto] = somenteData.split('-');
+
+    const ano = Number(anoTexto);
+    const mes = Number(mesTexto);
+    const dia = Number(diaTexto);
+
+    if (!ano || !mes || !dia) {
+        if (idade === undefined || idade === null) {
+            return '-';
+        }
+
+        return idade === 1 ? '1 ano' : `${idade} anos`;
+    }
+
+    const nascimento = new Date(ano, mes - 1, dia);
+    const hoje = new Date();
+
+    if (nascimento > hoje) {
+        return 'Data futura';
+    }
+
+    let anos = hoje.getFullYear() - nascimento.getFullYear();
+    let meses = hoje.getMonth() - nascimento.getMonth();
+
+    if (hoje.getDate() < nascimento.getDate()) {
+        meses--;
+    }
+
+    if (meses < 0) {
+        anos--;
+        meses += 12;
+    }
+
+    anos = Math.max(anos, 0);
+    meses = Math.max(meses, 0);
+
+    if (anos === 0 && meses === 0) {
+        return 'Menos de 1 mês';
+    }
+
+    if (anos === 0) {
+        return meses === 1 ? '1 mês' : `${meses} meses`;
+    }
+
+    if (meses === 0) {
+        return anos === 1 ? '1 ano' : `${anos} anos`;
+    }
+
+    const textoAnos = anos === 1 ? '1 ano' : `${anos} anos`;
+    const textoMeses = meses === 1 ? '1 mês' : `${meses} meses`;
+
+    return `${textoAnos} e ${textoMeses}`;
+};
+
+const transformarObjetoAuditoria = (objeto: any): any => {
+    if (!objeto || typeof objeto !== 'object' || Array.isArray(objeto)) {
+        return objeto;
+    }
+
+    const copia: any = { ...objeto };
+
+    if (typeof copia.DataNascimento === 'string') {
+        copia.DataNascimento = formatarIsoParaDataBr(copia.DataNascimento);
+    }
+
+    if ('Idade' in copia) {
+        copia.Idade = calcularIdadeDescricao(
+            typeof objeto.DataNascimento === 'string' ? objeto.DataNascimento : null,
+            typeof objeto.Idade === 'number' ? objeto.Idade : undefined
+        );
+    }
+
+    return copia;
+};
+
 const formatarJson = (valor?: string | null): string => {
     if (!valor) {
         return '-';
     }
 
     try {
-        return JSON.stringify(JSON.parse(valor), null, 2);
+        const parsed = JSON.parse(valor);
+        const tratado = transformarObjetoAuditoria(parsed);
+
+        return JSON.stringify(tratado, null, 2);
     } catch {
         return valor;
     }

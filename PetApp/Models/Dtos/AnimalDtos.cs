@@ -1,6 +1,3 @@
-using System.ComponentModel.DataAnnotations;
-using PetApp.Models;
-
 namespace PetApp.Models.Dtos
 {
     public class TutorSimpleDto
@@ -19,6 +16,8 @@ namespace PetApp.Models.Dtos
         public string Raca { get; set; } = string.Empty;
         public string Sexo { get; set; } = string.Empty;
         public int Idade { get; set; }
+        public DateTime? DataNascimento { get; set; }
+        public string IdadeDescricao { get; set; } = string.Empty;
         public decimal Peso { get; set; }
         public int IdTutor { get; set; }
         public TutorSimpleDto? Tutor { get; set; }
@@ -31,7 +30,8 @@ namespace PetApp.Models.Dtos
         public required string Especie { get; set; }
         public required string Raca { get; set; }
         public required string Sexo { get; set; }
-        public required int Idade { get; set; }
+        public int Idade { get; set; }
+        public DateTime? DataNascimento { get; set; }
         public decimal Peso { get; set; }
         public int IdTutor { get; set; }
         public bool EhCastrado { get; set; }
@@ -44,7 +44,8 @@ namespace PetApp.Models.Dtos
         public required string Especie { get; set; }
         public required string Raca { get; set; }
         public required string Sexo { get; set; }
-        public required int Idade { get; set; }
+        public int Idade { get; set; }
+        public DateTime? DataNascimento { get; set; }
         public decimal Peso { get; set; }
         public int IdTutor { get; set; }
         public bool EhCastrado { get; set; }

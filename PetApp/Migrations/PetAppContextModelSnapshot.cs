@@ -47,6 +47,9 @@ namespace PetApp.Migrations
                     b.Property<int>("Idade")
                         .HasColumnType("integer");
 
+
+                    b.Property<DateTime?>("DataNascimento")
+                        .HasColumnType("date");
                     b.Property<string>("Nome")
                         .IsRequired()
                         .HasMaxLength(200)

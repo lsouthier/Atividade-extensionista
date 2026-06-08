@@ -24,7 +24,7 @@ namespace PetApp.Controllers
                 .Include(a => a.Tutor)
                 .ToListAsync();
 
-            var result = animais.Select(a => MapToReadDto(a));
+            var result = animais.Select(MapToReadDto);
 
             return Ok(result);
         }
@@ -53,6 +53,14 @@ namespace PetApp.Controllers
                 return BadRequest(ModelState);
             }
 
+            var dataNascimento = NormalizarData(dto.DataNascimento);
+
+            if (dataNascimento.HasValue && dataNascimento.Value.Date > DateTime.Today)
+            {
+                ModelState.AddModelError(nameof(dto.DataNascimento), "A data de nascimento não pode ser futura.");
+                return BadRequest(ModelState);
+            }
+
             if (dto.IdTutor <= 0)
             {
                 ModelState.AddModelError(nameof(dto.IdTutor), "Um tutor válido deve ser selecionado.");
@@ -60,6 +68,7 @@ namespace PetApp.Controllers
             }
 
             var tutor = await _context.Tutores.FirstOrDefaultAsync(t => t.Id == dto.IdTutor);
+
             if (tutor == null)
             {
                 ModelState.AddModelError(nameof(dto.IdTutor), $"Tutor com ID {dto.IdTutor} não encontrado.");
@@ -72,7 +81,8 @@ namespace PetApp.Controllers
                 Especie = dto.Especie.Trim(),
                 Raca = dto.Raca.Trim(),
                 Sexo = dto.Sexo.Trim(),
-                Idade = dto.Idade,
+                Idade = CalcularIdadeEmAnos(dataNascimento) ?? dto.Idade,
+                DataNascimento = dataNascimento,
                 Peso = dto.Peso,
                 IdTutor = dto.IdTutor,
                 EhCastrado = dto.EhCastrado
@@ -113,7 +123,16 @@ namespace PetApp.Controllers
                 return BadRequest(ModelState);
             }
 
+            var dataNascimento = NormalizarData(dto.DataNascimento);
+
+            if (dataNascimento.HasValue && dataNascimento.Value.Date > DateTime.Today)
+            {
+                ModelState.AddModelError(nameof(dto.DataNascimento), "A data de nascimento não pode ser futura.");
+                return BadRequest(ModelState);
+            }
+
             var animal = await _context.Animais.FindAsync(id);
+
             if (animal == null)
             {
                 return NotFound();
@@ -126,6 +145,7 @@ namespace PetApp.Controllers
             }
 
             var tutor = await _context.Tutores.FirstOrDefaultAsync(t => t.Id == dto.IdTutor);
+
             if (tutor == null)
             {
                 ModelState.AddModelError(nameof(dto.IdTutor), $"Tutor com ID {dto.IdTutor} não encontrado.");
@@ -136,7 +156,8 @@ namespace PetApp.Controllers
             animal.Especie = dto.Especie.Trim();
             animal.Raca = dto.Raca.Trim();
             animal.Sexo = dto.Sexo.Trim();
-            animal.Idade = dto.Idade;
+            animal.Idade = CalcularIdadeEmAnos(dataNascimento) ?? dto.Idade;
+            animal.DataNascimento = dataNascimento;
             animal.Peso = dto.Peso;
             animal.IdTutor = dto.IdTutor;
             animal.EhCastrado = dto.EhCastrado;
@@ -163,6 +184,7 @@ namespace PetApp.Controllers
         public async Task<IActionResult> DeleteAnimal(int id, [FromQuery] bool excluirCastracoes = false)
         {
             var animal = await _context.Animais.FindAsync(id);
+
             if (animal == null)
             {
                 return NotFound();
@@ -228,13 +250,108 @@ namespace PetApp.Controllers
                 .Where(a => !a.EhCastrado)
                 .ToListAsync();
 
-            var result = animais.Select(a => MapToReadDto(a));
+            var result = animais.Select(MapToReadDto);
 
             return Ok(result);
         }
 
+        private static DateTime? NormalizarData(DateTime? data)
+        {
+            if (!data.HasValue)
+            {
+                return null;
+            }
+
+            return DateTime.SpecifyKind(data.Value.Date, DateTimeKind.Unspecified);
+        }
+
+        private static int? CalcularIdadeEmAnos(DateTime? dataNascimento)
+        {
+            if (!dataNascimento.HasValue)
+            {
+                return null;
+            }
+
+            var hoje = DateTime.Today;
+            var nascimento = dataNascimento.Value.Date;
+
+            if (nascimento > hoje)
+            {
+                return 0;
+            }
+
+            var anos = hoje.Year - nascimento.Year;
+
+            if (nascimento > hoje.AddYears(-anos))
+            {
+                anos--;
+            }
+
+            return Math.Max(anos, 0);
+        }
+
+        private static string CalcularIdadeDescricao(DateTime? dataNascimento, int idade)
+        {
+            if (!dataNascimento.HasValue)
+            {
+                if (idade <= 0)
+                {
+                    return "Não informado";
+                }
+
+                return idade == 1 ? "1 ano" : $"{idade} anos";
+            }
+
+            var hoje = DateTime.Today;
+            var nascimento = dataNascimento.Value.Date;
+
+            if (nascimento > hoje)
+            {
+                return "Data futura";
+            }
+
+            var anos = hoje.Year - nascimento.Year;
+            var meses = hoje.Month - nascimento.Month;
+
+            if (hoje.Day < nascimento.Day)
+            {
+                meses--;
+            }
+
+            if (meses < 0)
+            {
+                anos--;
+                meses += 12;
+            }
+
+            anos = Math.Max(anos, 0);
+            meses = Math.Max(meses, 0);
+
+            if (anos == 0 && meses == 0)
+            {
+                return "Menos de 1 mês";
+            }
+
+            if (anos == 0)
+            {
+                return meses == 1 ? "1 mês" : $"{meses} meses";
+            }
+
+            if (meses == 0)
+            {
+                return anos == 1 ? "1 ano" : $"{anos} anos";
+            }
+
+            var textoAnos = anos == 1 ? "1 ano" : $"{anos} anos";
+            var textoMeses = meses == 1 ? "1 mês" : $"{meses} meses";
+
+            return $"{textoAnos} e {textoMeses}";
+        }
+
         private static AnimalReadDto MapToReadDto(Animal animal)
         {
+            var idadeCalculada = CalcularIdadeEmAnos(animal.DataNascimento) ?? animal.Idade;
+
             return new AnimalReadDto
             {
                 Id = animal.Id,
@@ -242,7 +359,9 @@ namespace PetApp.Controllers
                 Especie = animal.Especie,
                 Raca = animal.Raca,
                 Sexo = animal.Sexo,
-                Idade = animal.Idade,
+                Idade = idadeCalculada,
+                DataNascimento = animal.DataNascimento?.Date,
+                IdadeDescricao = CalcularIdadeDescricao(animal.DataNascimento, animal.Idade),
                 Peso = animal.Peso,
                 IdTutor = animal.IdTutor,
                 Tutor = animal.Tutor != null ? new TutorSimpleDto

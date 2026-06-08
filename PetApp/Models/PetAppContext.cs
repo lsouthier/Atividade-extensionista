@@ -54,6 +54,9 @@ namespace PetApp.Models
                 entity.Property(a => a.Idade)
                     .IsRequired();
 
+                entity.Property(a => a.DataNascimento)
+                    .HasColumnType("date");
+
                 entity.Property(a => a.Peso);
 
                 entity.Property(a => a.EhCastrado);
@@ -207,11 +210,17 @@ namespace PetApp.Models
 
             if (auditoriasPendentes.Count > 0)
             {
-                var auditorias = auditoriasPendentes
-                    .Select(CriarAuditoriaFinal)
-                    .Where(a => a != null)
-                    .Cast<AuditoriaSistema>()
-                    .ToList();
+                var auditorias = new List<AuditoriaSistema>();
+
+                foreach (var pendente in auditoriasPendentes)
+                {
+                    var auditoria = await CriarAuditoriaFinalAsync(pendente, cancellationToken);
+
+                    if (auditoria != null)
+                    {
+                        auditorias.Add(auditoria);
+                    }
+                }
 
                 if (auditorias.Count > 0)
                 {
@@ -317,6 +326,8 @@ namespace PetApp.Models
                     Entidade = nomeEntidade,
                     ValoresAntes = valoresAntes,
                     ValoresDepois = valoresDepois,
+                    RegistroAntes = CriarContextoRegistro(entry, true),
+                    RegistroDepois = CriarContextoRegistro(entry, false),
                     IpOrigem = ipOrigem,
                     UserAgent = userAgent
                 });
@@ -325,9 +336,22 @@ namespace PetApp.Models
             return pendentes;
         }
 
-        private static AuditoriaSistema? CriarAuditoriaFinal(AuditoriaPendente pendente)
+        private async Task<AuditoriaSistema?> CriarAuditoriaFinalAsync(
+            AuditoriaPendente pendente,
+            CancellationToken cancellationToken)
         {
             var entidadeId = ObterEntidadeId(pendente.Entry);
+
+            await EnriquecerContextoAsync(pendente.RegistroAntes, cancellationToken);
+            await EnriquecerContextoAsync(pendente.RegistroDepois, cancellationToken);
+
+            var valoresAntes = pendente.ValoresAntes.Count > 0
+                ? CriarPayloadAuditoria(pendente, entidadeId, pendente.RegistroAntes, pendente.ValoresAntes)
+                : null;
+
+            var valoresDepois = pendente.ValoresDepois.Count > 0
+                ? CriarPayloadAuditoria(pendente, entidadeId, pendente.RegistroDepois, pendente.ValoresDepois)
+                : null;
 
             return new AuditoriaSistema
             {
@@ -337,11 +361,418 @@ namespace PetApp.Models
                 Acao = pendente.Acao,
                 Entidade = pendente.Entidade,
                 EntidadeId = entidadeId,
-                ValoresAntes = SerializarValores(pendente.ValoresAntes),
-                ValoresDepois = SerializarValores(pendente.ValoresDepois),
+                ValoresAntes = SerializarObjeto(valoresAntes),
+                ValoresDepois = SerializarObjeto(valoresDepois),
                 IpOrigem = pendente.IpOrigem,
                 UserAgent = pendente.UserAgent
             };
+        }
+
+        private Dictionary<string, object?> CriarPayloadAuditoria(
+            AuditoriaPendente pendente,
+            string? entidadeId,
+            Dictionary<string, object?> registro,
+            Dictionary<string, object?> alteracoes)
+        {
+            var registroFormatado = FormatarDicionario(registro);
+            var alteracoesFormatadas = FormatarAlteracoes(alteracoes, registro);
+
+            return new Dictionary<string, object?>
+            {
+                ["Resumo"] = CriarResumo(pendente, registro),
+                ["Usuario"] = pendente.UsuarioNome,
+                ["Acao"] = pendente.Acao,
+                ["Entidade"] = pendente.Entidade,
+                ["RegistroId"] = entidadeId,
+                ["Registro"] = registroFormatado,
+                ["CamposAlterados"] = alteracoes.Keys.ToList(),
+                ["Alteracoes"] = alteracoesFormatadas
+            };
+        }
+
+        private static Dictionary<string, object?> CriarContextoRegistro(EntityEntry entry, bool antes)
+        {
+            var entidade = entry.Entity.GetType().Name;
+            var contexto = new Dictionary<string, object?>();
+
+            switch (entidade)
+            {
+                case nameof(Animal):
+                    AdicionarSeExiste(contexto, "Id", ObterValor(entry, "Id", antes));
+                    AdicionarSeExiste(contexto, "Nome", ObterValor(entry, "Nome", antes));
+                    AdicionarSeExiste(contexto, "Especie", ObterValor(entry, "Especie", antes));
+                    AdicionarSeExiste(contexto, "Raca", ObterValor(entry, "Raca", antes));
+                    AdicionarSeExiste(contexto, "Sexo", ObterValor(entry, "Sexo", antes));
+                    AdicionarSeExiste(contexto, "DataNascimento", ObterValor(entry, "DataNascimento", antes));
+                    AdicionarSeExiste(contexto, "Idade", ObterValor(entry, "Idade", antes));
+                    AdicionarSeExiste(contexto, "Peso", ObterValor(entry, "Peso", antes));
+                    AdicionarSeExiste(contexto, "TutorId", ObterValor(entry, "IdTutor", antes));
+                    AdicionarSeExiste(contexto, "EhCastrado", ObterValor(entry, "EhCastrado", antes));
+                    break;
+
+                case nameof(Tutor):
+                    AdicionarSeExiste(contexto, "Id", ObterValor(entry, "Id", antes));
+                    AdicionarSeExiste(contexto, "Nome", ObterValor(entry, "Nome", antes));
+                    AdicionarSeExiste(contexto, "Endereco", ObterValor(entry, "Endereco", antes));
+                    AdicionarSeExiste(contexto, "Telefone", ObterValor(entry, "Telefone", antes));
+                    break;
+
+                case nameof(Clinica):
+                    AdicionarSeExiste(contexto, "Id", ObterValor(entry, "Id", antes));
+                    AdicionarSeExiste(contexto, "Nome", ObterValor(entry, "Nome", antes));
+                    AdicionarSeExiste(contexto, "Telefone", ObterValor(entry, "Telefone", antes));
+                    AdicionarSeExiste(contexto, "VeterinarioResponsavel", ObterValor(entry, "VeterinarioResponsavel", antes));
+                    break;
+
+                case nameof(Castracao):
+                    AdicionarSeExiste(contexto, "Id", ObterValor(entry, "Id", antes));
+                    AdicionarSeExiste(contexto, "DataCastracao", ObterValor(entry, "DataCastracao", antes));
+                    AdicionarSeExiste(contexto, "Valor", ObterValor(entry, "Valor", antes));
+                    AdicionarSeExiste(contexto, "AnimalId", ObterValor(entry, "IdAnimal", antes));
+                    AdicionarSeExiste(contexto, "ClinicaId", ObterValor(entry, "IdClinica", antes));
+                    AdicionarSeExiste(contexto, "Observacoes", ObterValor(entry, "Observacoes", antes));
+                    break;
+
+                case nameof(UsuarioSistema):
+                    AdicionarSeExiste(contexto, "Id", ObterValor(entry, "Id", antes));
+                    AdicionarSeExiste(contexto, "NomeUsuario", ObterValor(entry, "NomeUsuario", antes));
+                    AdicionarSeExiste(contexto, "Nome", ObterValor(entry, "Nome", antes));
+                    AdicionarSeExiste(contexto, "PerfilAcesso", ObterValor(entry, "PerfilAcesso", antes));
+                    AdicionarSeExiste(contexto, "Ativo", ObterValor(entry, "Ativo", antes));
+                    break;
+
+                default:
+                    foreach (var property in entry.Properties)
+                    {
+                        if (property.Metadata.IsShadowProperty() ||
+                            PropriedadeSensivel(property.Metadata.Name))
+                        {
+                            continue;
+                        }
+
+                        AdicionarSeExiste(
+                            contexto,
+                            property.Metadata.Name,
+                            ObterValor(entry, property.Metadata.Name, antes));
+                    }
+
+                    break;
+            }
+
+            return contexto;
+        }
+
+        private async Task EnriquecerContextoAsync(
+            Dictionary<string, object?> contexto,
+            CancellationToken cancellationToken)
+        {
+            if (contexto.Count == 0)
+            {
+                return;
+            }
+
+            if (contexto.TryGetValue("TutorId", out var tutorId))
+            {
+                var nomeTutor = await ObterNomeTutorAsync(tutorId, cancellationToken);
+
+                if (!string.IsNullOrWhiteSpace(nomeTutor))
+                {
+                    contexto["Tutor"] = nomeTutor;
+                }
+            }
+
+            if (contexto.TryGetValue("AnimalId", out var animalId))
+            {
+                var nomeAnimal = await ObterNomeAnimalAsync(animalId, cancellationToken);
+
+                if (!string.IsNullOrWhiteSpace(nomeAnimal))
+                {
+                    contexto["Animal"] = nomeAnimal;
+                }
+            }
+
+            if (contexto.TryGetValue("ClinicaId", out var clinicaId))
+            {
+                var nomeClinica = await ObterNomeClinicaAsync(clinicaId, cancellationToken);
+
+                if (!string.IsNullOrWhiteSpace(nomeClinica))
+                {
+                    contexto["Clinica"] = nomeClinica;
+                }
+            }
+        }
+
+        private async Task<string?> ObterNomeTutorAsync(object? id, CancellationToken cancellationToken)
+        {
+            var tutorId = ConverterParaInt(id);
+
+            if (!tutorId.HasValue)
+            {
+                return null;
+            }
+
+            return await Tutores
+                .AsNoTracking()
+                .Where(t => t.Id == tutorId.Value)
+                .Select(t => t.Nome)
+                .FirstOrDefaultAsync(cancellationToken);
+        }
+
+        private async Task<string?> ObterNomeAnimalAsync(object? id, CancellationToken cancellationToken)
+        {
+            var animalId = ConverterParaInt(id);
+
+            if (!animalId.HasValue)
+            {
+                return null;
+            }
+
+            return await Animais
+                .AsNoTracking()
+                .Where(a => a.Id == animalId.Value)
+                .Select(a => a.Nome)
+                .FirstOrDefaultAsync(cancellationToken);
+        }
+
+        private async Task<string?> ObterNomeClinicaAsync(object? id, CancellationToken cancellationToken)
+        {
+            var clinicaId = ConverterParaInt(id);
+
+            if (!clinicaId.HasValue)
+            {
+                return null;
+            }
+
+            return await Clinicas
+                .AsNoTracking()
+                .Where(c => c.Id == clinicaId.Value)
+                .Select(c => c.Nome)
+                .FirstOrDefaultAsync(cancellationToken);
+        }
+
+        private static int? ConverterParaInt(object? valor)
+        {
+            if (valor == null)
+            {
+                return null;
+            }
+
+            if (valor is int inteiro)
+            {
+                return inteiro;
+            }
+
+            if (int.TryParse(valor.ToString(), out var convertido))
+            {
+                return convertido;
+            }
+
+            return null;
+        }
+
+        private static object? ObterValor(EntityEntry entry, string nomePropriedade, bool antes)
+        {
+            var propriedade = entry.Properties
+                .FirstOrDefault(p => p.Metadata.Name == nomePropriedade);
+
+            if (propriedade == null)
+            {
+                return null;
+            }
+
+            return entry.State switch
+            {
+                EntityState.Added => antes ? null : propriedade.CurrentValue,
+                EntityState.Deleted => propriedade.OriginalValue,
+                EntityState.Modified => antes ? propriedade.OriginalValue : propriedade.CurrentValue,
+                _ => propriedade.CurrentValue
+            };
+        }
+
+        private static void AdicionarSeExiste(
+            Dictionary<string, object?> dicionario,
+            string chave,
+            object? valor)
+        {
+            if (valor == null)
+            {
+                return;
+            }
+
+            dicionario[chave] = valor;
+        }
+
+        private static string CriarResumo(AuditoriaPendente pendente, Dictionary<string, object?> registro)
+        {
+            var nome = ObterPrimeiroTexto(registro, "Nome", "Animal", "Tutor", "Clinica", "NomeUsuario");
+
+            if (!string.IsNullOrWhiteSpace(nome))
+            {
+                return $"{pendente.Entidade} {nome} - {TraduzirAcao(pendente.Acao)}";
+            }
+
+            return $"{pendente.Entidade} - {TraduzirAcao(pendente.Acao)}";
+        }
+
+        private static string? ObterPrimeiroTexto(Dictionary<string, object?> dicionario, params string[] chaves)
+        {
+            foreach (var chave in chaves)
+            {
+                if (dicionario.TryGetValue(chave, out var valor) &&
+                    !string.IsNullOrWhiteSpace(valor?.ToString()))
+                {
+                    return valor.ToString();
+                }
+            }
+
+            return null;
+        }
+
+        private static string TraduzirAcao(string acao)
+        {
+            return acao switch
+            {
+                "CADASTRO" => "cadastrado",
+                "ALTERACAO" => "alterado",
+                "EXCLUSAO" => "excluído",
+                "LOGIN" => "login realizado",
+                _ => acao
+            };
+        }
+
+        private static Dictionary<string, object?> FormatarDicionario(Dictionary<string, object?> valores)
+        {
+            var formatado = new Dictionary<string, object?>();
+
+            foreach (var item in valores)
+            {
+                formatado[item.Key] = FormatarValor(item.Key, item.Value);
+            }
+
+            if (valores.TryGetValue("DataNascimento", out var dataNascimento))
+            {
+                formatado["IdadeDetalhada"] = CalcularIdadeDescricao(dataNascimento);
+            }
+
+            return formatado;
+        }
+
+        private static Dictionary<string, object?> FormatarAlteracoes(
+            Dictionary<string, object?> alteracoes,
+            Dictionary<string, object?> registro)
+        {
+            var formatado = new Dictionary<string, object?>();
+
+            foreach (var item in alteracoes)
+            {
+                if (item.Key == "Idade" && registro.TryGetValue("DataNascimento", out var dataNascimento))
+                {
+                    formatado[item.Key] = CalcularIdadeDescricao(dataNascimento);
+                    continue;
+                }
+
+                formatado[item.Key] = FormatarValor(item.Key, item.Value);
+            }
+
+            if (alteracoes.ContainsKey("DataNascimento") && registro.TryGetValue("DataNascimento", out var data))
+            {
+                formatado["IdadeDetalhada"] = CalcularIdadeDescricao(data);
+            }
+
+            return formatado;
+        }
+
+        private static object? FormatarValor(string propriedade, object? valor)
+        {
+            if (valor == null)
+            {
+                return null;
+            }
+
+            if (valor is DateTime data)
+            {
+                if (propriedade.Contains("Data", StringComparison.OrdinalIgnoreCase))
+                {
+                    return data.ToString("dd/MM/yyyy");
+                }
+
+                return data.ToString("dd/MM/yyyy HH:mm:ss");
+            }
+
+            if (valor is bool booleano)
+            {
+                return booleano ? "Sim" : "Não";
+            }
+
+            if (valor is decimal decimalValor)
+            {
+                return decimalValor.ToString("N2");
+            }
+
+            return valor;
+        }
+
+        private static string CalcularIdadeDescricao(object? dataNascimento)
+        {
+            if (dataNascimento == null)
+            {
+                return "Não informado";
+            }
+
+            DateTime data;
+
+            if (dataNascimento is DateTime dataConvertida)
+            {
+                data = dataConvertida.Date;
+            }
+            else if (!DateTime.TryParse(dataNascimento.ToString(), out data))
+            {
+                return "Não informado";
+            }
+
+            var hoje = DateTime.Today;
+
+            if (data > hoje)
+            {
+                return "Data futura";
+            }
+
+            var anos = hoje.Year - data.Year;
+            var meses = hoje.Month - data.Month;
+
+            if (hoje.Day < data.Day)
+            {
+                meses--;
+            }
+
+            if (meses < 0)
+            {
+                anos--;
+                meses += 12;
+            }
+
+            anos = Math.Max(anos, 0);
+            meses = Math.Max(meses, 0);
+
+            if (anos == 0 && meses == 0)
+            {
+                return "Menos de 1 mês";
+            }
+
+            if (anos == 0)
+            {
+                return meses == 1 ? "1 mês" : $"{meses} meses";
+            }
+
+            if (meses == 0)
+            {
+                return anos == 1 ? "1 ano" : $"{anos} anos";
+            }
+
+            var textoAnos = anos == 1 ? "1 ano" : $"{anos} anos";
+            var textoMeses = meses == 1 ? "1 mês" : $"{meses} meses";
+
+            return $"{textoAnos} e {textoMeses}";
         }
 
         private static string? ObterEntidadeId(EntityEntry entry)
@@ -513,15 +944,15 @@ namespace PetApp.Models
                 propriedade.Contains(s, StringComparison.OrdinalIgnoreCase));
         }
 
-        private static string? SerializarValores(Dictionary<string, object?> valores)
+        private static string? SerializarObjeto(object? valor)
         {
-            if (valores.Count == 0)
+            if (valor == null)
             {
                 return null;
             }
 
             return JsonSerializer.Serialize(
-                valores,
+                valor,
                 new JsonSerializerOptions
                 {
                     WriteIndented = false
@@ -538,6 +969,8 @@ namespace PetApp.Models
             public string Entidade { get; set; } = string.Empty;
             public Dictionary<string, object?> ValoresAntes { get; set; } = new();
             public Dictionary<string, object?> ValoresDepois { get; set; } = new();
+            public Dictionary<string, object?> RegistroAntes { get; set; } = new();
+            public Dictionary<string, object?> RegistroDepois { get; set; } = new();
             public string? IpOrigem { get; set; }
             public string? UserAgent { get; set; }
         }
