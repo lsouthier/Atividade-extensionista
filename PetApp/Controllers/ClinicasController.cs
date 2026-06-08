@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PetApp.Models;
@@ -5,6 +6,7 @@ using PetApp.Models.Dtos;
 
 namespace PetApp.Controllers
 {
+    [Authorize(Policy = "PodeLer")]
     [ApiController]
     [Route("api/[controller]")]
     public class ClinicasController : ControllerBase
@@ -56,6 +58,7 @@ namespace PetApp.Controllers
 
             return Ok(dto);
         }
+        [Authorize(Policy = "PodeCadastrar")]
 
         [HttpPost]
         public async Task<ActionResult<ClinicaReadDto>> CreateClinica([FromBody] ClinicaCreateDto dto)
@@ -85,6 +88,7 @@ namespace PetApp.Controllers
 
             return CreatedAtAction(nameof(GetClinica), new { id = clinica.Id }, readDto);
         }
+        [Authorize(Policy = "PodeCadastrar")]
 
         [HttpPut("{id:int}")]
         public async Task<IActionResult> UpdateClinica(int id, [FromBody] ClinicaUpdateDto dto)
@@ -114,6 +118,7 @@ namespace PetApp.Controllers
 
             return NoContent();
         }
+        [Authorize(Policy = "PodeCadastrar")]
 
         [HttpDelete("{id:int}")]
         public async Task<IActionResult> DeleteClinica(

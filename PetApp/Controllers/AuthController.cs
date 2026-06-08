@@ -102,14 +102,13 @@ namespace PetApp.Controllers
                 Acao = "LOGIN",
                 Entidade = "Auth",
                 EntidadeId = usuario.Id.ToString(),
-                ValoresDepois = "{\"Evento\":\"Login realizado com sucesso\"}",
+                ValoresDepois = $"{{\"Evento\":\"Login realizado com sucesso\",\"PerfilAcesso\":\"{usuario.PerfilAcesso}\"}}",
                 IpOrigem = ObterIpOrigem(HttpContext),
                 UserAgent = HttpContext.Request.Headers.UserAgent.ToString()
             });
 
             await _context.SaveChangesAsync();
         }
-
 
         private static string? ObterIpOrigem(HttpContext? httpContext)
         {
@@ -225,11 +224,17 @@ namespace PetApp.Controllers
             var issuer = _configuration["Jwt:Issuer"] ?? "PetApp";
             var audience = _configuration["Jwt:Audience"] ?? "PetAppFrontend";
 
+            var perfil = NormalizarPerfilAcesso(usuario.PerfilAcesso);
+            var sessionStamp = ObterSessionStamp(usuario);
+
             var claims = new List<Claim>
             {
                 new(ClaimTypes.NameIdentifier, usuario.Id.ToString()),
                 new(ClaimTypes.Name, usuario.NomeUsuario),
-                new("nome", usuario.Nome)
+                new(ClaimTypes.Role, perfil),
+                new("nome", usuario.Nome),
+                new("perfilAcesso", perfil),
+                new("sessionStamp", sessionStamp)
             };
 
             var signingKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key));
@@ -247,6 +252,12 @@ namespace PetApp.Controllers
             return new JwtSecurityTokenHandler().WriteToken(token);
         }
 
+        private static string ObterSessionStamp(UsuarioSistema usuario)
+        {
+            var dataBase = usuario.AtualizadoEmUtc ?? usuario.CriadoEmUtc;
+            return dataBase.ToUniversalTime().Ticks.ToString();
+        }
+
         private static UsuarioSistemaReadDto MapToReadDto(UsuarioSistema usuario)
         {
             return new UsuarioSistemaReadDto
@@ -254,6 +265,7 @@ namespace PetApp.Controllers
                 Id = usuario.Id,
                 NomeUsuario = usuario.NomeUsuario,
                 Nome = usuario.Nome,
+                PerfilAcesso = NormalizarPerfilAcesso(usuario.PerfilAcesso),
                 Ativo = usuario.Ativo,
                 CriadoEmUtc = usuario.CriadoEmUtc,
                 AtualizadoEmUtc = usuario.AtualizadoEmUtc
@@ -263,6 +275,17 @@ namespace PetApp.Controllers
         private static string NormalizarNomeUsuario(string nomeUsuario)
         {
             return nomeUsuario.Trim().ToUpperInvariant();
+        }
+
+        private static string NormalizarPerfilAcesso(string? perfil)
+        {
+            return perfil switch
+            {
+                "Administrador" => "Administrador",
+                "Cadastro" => "Cadastro",
+                "Leitura" => "Leitura",
+                _ => "Leitura"
+            };
         }
     }
 }

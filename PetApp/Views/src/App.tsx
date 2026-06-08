@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import type { AppDispatch, RootState } from './store';
-import { logout, validarSessaoAtual } from './store/authSlice';
+import { logout, validarSessaoAtual, validarSessaoServidor } from './store/authSlice';
 import { AnimaisPage } from './components/animais/AnimaisPage';
 import { TutoresPage } from './components/tutores/TutoresPage';
 import { ClinicasPage } from './components/clinicas/ClinicasPage';
@@ -13,12 +13,20 @@ import logo from './assets/logo.jpg';
 import './styles/responsive.css';
 
 type Pagina = 'animais' | 'tutores' | 'clinicas' | 'castracoes' | 'usuarios' | 'auditoria';
+type PerfilAcesso = 'Leitura' | 'Cadastro' | 'Administrador';
+
+const obterClassePerfil = (perfil: PerfilAcesso): string => {
+    return `perfil-${perfil.toLowerCase()}`;
+};
 
 export const App: React.FC = () => {
     const dispatch = useDispatch<AppDispatch>();
     const { autenticado, usuario } = useSelector((state: RootState) => state.auth);
     const [paginaAtual, setPaginaAtual] = useState<Pagina>('animais');
     const [menuAberto, setMenuAberto] = useState(false);
+
+    const perfilAcesso = (usuario?.perfilAcesso ?? 'Leitura') as PerfilAcesso;
+    const ehAdministrador = perfilAcesso === 'Administrador';
 
     useEffect(() => {
         dispatch(validarSessaoAtual());
@@ -36,12 +44,40 @@ export const App: React.FC = () => {
         };
     }, [dispatch]);
 
+    useEffect(() => {
+        if (autenticado) {
+            dispatch(validarSessaoServidor());
+        }
+    }, [autenticado, dispatch]);
+
+    useEffect(() => {
+        if (!ehAdministrador && (paginaAtual === 'usuarios' || paginaAtual === 'auditoria')) {
+            setPaginaAtual('animais');
+            setMenuAberto(false);
+        }
+    }, [ehAdministrador, paginaAtual]);
+
     if (!autenticado) {
         return <LoginPage />;
     }
 
-    const navegar = (pagina: Pagina) => (e: React.MouseEvent<HTMLAnchorElement>) => {
+    const navegar = (pagina: Pagina) => async (e: React.MouseEvent<HTMLAnchorElement>) => {
         e.preventDefault();
+
+        const validacao = await dispatch(validarSessaoServidor());
+
+        if (validarSessaoServidor.rejected.match(validacao)) {
+            setPaginaAtual('animais');
+            setMenuAberto(false);
+            return;
+        }
+
+        if (!ehAdministrador && (pagina === 'usuarios' || pagina === 'auditoria')) {
+            setPaginaAtual('animais');
+            setMenuAberto(false);
+            return;
+        }
+
         setPaginaAtual(pagina);
         setMenuAberto(false);
     };
@@ -53,7 +89,7 @@ export const App: React.FC = () => {
     };
 
     return (
-        <div>
+        <div className={obterClassePerfil(perfilAcesso)}>
             <nav className="petapp-navbar mb-4 p-3">
                 <div className="container">
                     <div className="petapp-navbar-inner">
@@ -91,17 +127,22 @@ export const App: React.FC = () => {
                                 <a className={`petapp-menu-link ${paginaAtual === 'castracoes' ? 'active fw-bold' : ''}`} href="#" onClick={navegar('castracoes')}>
                                     Castrações
                                 </a>
-                                <a className={`petapp-menu-link ${paginaAtual === 'usuarios' ? 'active fw-bold' : ''}`} href="#" onClick={navegar('usuarios')}>
-                                    Usuários
-                                </a>
-                                <a className={`petapp-menu-link ${paginaAtual === 'auditoria' ? 'active fw-bold' : ''}`} href="#" onClick={navegar('auditoria')}>
-                                    Auditoria
-                                </a>
+
+                                {ehAdministrador && (
+                                    <>
+                                        <a className={`petapp-menu-link ${paginaAtual === 'usuarios' ? 'active fw-bold' : ''}`} href="#" onClick={navegar('usuarios')}>
+                                            Usuários
+                                        </a>
+                                        <a className={`petapp-menu-link ${paginaAtual === 'auditoria' ? 'active fw-bold' : ''}`} href="#" onClick={navegar('auditoria')}>
+                                            Auditoria
+                                        </a>
+                                    </>
+                                )}
                             </div>
 
                             <div className="petapp-user-area">
                                 <span className="text-white small text-nowrap">
-                                    {usuario?.nomeUsuario}
+                                    {usuario?.nomeUsuario} · {perfilAcesso}
                                 </span>
                                 <button className="btn btn-sm btn-outline-light" onClick={sair}>
                                     Sair
@@ -117,8 +158,8 @@ export const App: React.FC = () => {
                 {paginaAtual === 'tutores' && <TutoresPage />}
                 {paginaAtual === 'clinicas' && <ClinicasPage />}
                 {paginaAtual === 'castracoes' && <CastracoesPa />}
-                {paginaAtual === 'usuarios' && <UsuariosPage />}
-                {paginaAtual === 'auditoria' && <AuditoriaPage />}
+                {paginaAtual === 'usuarios' && ehAdministrador && <UsuariosPage />}
+                {paginaAtual === 'auditoria' && ehAdministrador && <AuditoriaPage />}
             </div>
         </div>
     );

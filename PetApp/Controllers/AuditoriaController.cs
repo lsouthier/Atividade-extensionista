@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PetApp.Models;
@@ -5,6 +6,7 @@ using PetApp.Models.Dtos;
 
 namespace PetApp.Controllers
 {
+    [Authorize(Policy = "Administrador")]
     [ApiController]
     [Route("api/[controller]")]
     public class AuditoriaController : ControllerBase

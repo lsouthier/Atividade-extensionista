@@ -1,9 +1,12 @@
 import { axiosClient } from './axiosClient';
 
+export type PerfilAcesso = 'Leitura' | 'Cadastro' | 'Administrador';
+
 export interface UsuarioSistema {
     id: number;
     nomeUsuario: string;
     nome: string;
+    perfilAcesso: PerfilAcesso;
     ativo: boolean;
     criadoEmUtc: string;
     atualizadoEmUtc?: string | null;
@@ -13,6 +16,7 @@ export interface UsuarioSistemaCreate {
     nomeUsuario: string;
     nome: string;
     senha: string;
+    perfilAcesso: PerfilAcesso;
     ativo: boolean;
 }
 
@@ -21,6 +25,7 @@ export interface UsuarioSistemaUpdate {
     nomeUsuario: string;
     nome: string;
     novaSenha?: string;
+    perfilAcesso: PerfilAcesso;
     ativo: boolean;
 }
 

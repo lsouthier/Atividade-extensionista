@@ -1,56 +1,45 @@
-using System.ComponentModel.DataAnnotations;
-
 namespace PetApp.Models.Dtos
 {
     public class LoginRequestDto
     {
-        [Required]
-        public string NomeUsuario { get; set; } = string.Empty;
+        public required string NomeUsuario { get; set; }
 
-        [Required]
-        public string Senha { get; set; } = string.Empty;
+        public required string Senha { get; set; }
     }
 
     public class LoginResponseDto
     {
-        public string Token { get; set; } = string.Empty;
+        public required string Token { get; set; }
+
         public DateTime ExpiraEmUtc { get; set; }
-        public UsuarioSistemaReadDto Usuario { get; set; } = new();
+
+        public required UsuarioSistemaReadDto Usuario { get; set; }
     }
 
     public class UsuarioSistemaCreateDto
     {
-        [Required]
-        [MaxLength(100)]
-        public string NomeUsuario { get; set; } = string.Empty;
+        public required string NomeUsuario { get; set; }
 
-        [Required]
-        [MaxLength(150)]
-        public string Nome { get; set; } = string.Empty;
+        public required string Nome { get; set; }
 
-        [Required]
-        [MinLength(4)]
-        [MaxLength(100)]
-        public string Senha { get; set; } = string.Empty;
+        public required string Senha { get; set; }
+
+        public string PerfilAcesso { get; set; } = "Leitura";
 
         public bool Ativo { get; set; } = true;
     }
 
     public class UsuarioSistemaUpdateDto
     {
-        [Required]
         public int Id { get; set; }
 
-        [Required]
-        [MaxLength(100)]
-        public string NomeUsuario { get; set; } = string.Empty;
+        public required string NomeUsuario { get; set; }
 
-        [Required]
-        [MaxLength(150)]
-        public string Nome { get; set; } = string.Empty;
+        public required string Nome { get; set; }
 
-        [MaxLength(100)]
         public string? NovaSenha { get; set; }
+
+        public string PerfilAcesso { get; set; } = "Leitura";
 
         public bool Ativo { get; set; } = true;
     }
@@ -58,10 +47,17 @@ namespace PetApp.Models.Dtos
     public class UsuarioSistemaReadDto
     {
         public int Id { get; set; }
+
         public string NomeUsuario { get; set; } = string.Empty;
+
         public string Nome { get; set; } = string.Empty;
+
+        public string PerfilAcesso { get; set; } = "Leitura";
+
         public bool Ativo { get; set; }
+
         public DateTime CriadoEmUtc { get; set; }
+
         public DateTime? AtualizadoEmUtc { get; set; }
     }
 }

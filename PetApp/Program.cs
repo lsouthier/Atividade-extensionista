@@ -1,4 +1,5 @@
 using System.Net;
+using System.Security.Claims;
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
@@ -63,10 +64,54 @@ builder.Services
             ValidateLifetime = true,
             ClockSkew = TimeSpan.FromMinutes(2)
         };
+
+        options.Events = new JwtBearerEvents
+        {
+            OnTokenValidated = async context =>
+            {
+                var idUsuario = context.Principal?.FindFirstValue(ClaimTypes.NameIdentifier);
+                var sessionStampToken = context.Principal?.FindFirstValue("sessionStamp");
+
+                if (!int.TryParse(idUsuario, out var usuarioId) ||
+                    string.IsNullOrWhiteSpace(sessionStampToken))
+                {
+                    context.Fail("Sessão inválida.");
+                    return;
+                }
+
+                var db = context.HttpContext.RequestServices.GetRequiredService<PetAppContext>();
+
+                var usuario = await db.UsuariosSistema
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(u => u.Id == usuarioId);
+
+                if (usuario == null || !usuario.Ativo)
+                {
+                    context.Fail("Usuário inativo ou inexistente.");
+                    return;
+                }
+
+                var sessionStampAtual = ObterSessionStamp(usuario);
+
+                if (!string.Equals(sessionStampAtual, sessionStampToken, StringComparison.Ordinal))
+                {
+                    context.Fail("Sessão expirada por alteração no cadastro do usuário.");
+                }
+            }
+        };
     });
 
 builder.Services.AddAuthorization(options =>
 {
+    options.AddPolicy("PodeLer", policy =>
+        policy.RequireRole("Leitura", "Cadastro", "Administrador"));
+
+    options.AddPolicy("PodeCadastrar", policy =>
+        policy.RequireRole("Cadastro", "Administrador"));
+
+    options.AddPolicy("Administrador", policy =>
+        policy.RequireRole("Administrador"));
+
     options.FallbackPolicy = new AuthorizationPolicyBuilder()
         .RequireAuthenticatedUser()
         .Build();
@@ -105,6 +150,12 @@ app.MapControllers();
 
 app.Run();
 
+static string ObterSessionStamp(UsuarioSistema usuario)
+{
+    var dataBase = usuario.AtualizadoEmUtc ?? usuario.CriadoEmUtc;
+    return dataBase.ToUniversalTime().Ticks.ToString();
+}
+
 static async Task InicializarBancoEUsuarioAdminAsync(WebApplication app)
 {
     await using var scope = app.Services.CreateAsyncScope();
@@ -117,6 +168,32 @@ static async Task InicializarBancoEUsuarioAdminAsync(WebApplication app)
 
     if (existeUsuario)
     {
+        var usuariosSemPerfil = await context.UsuariosSistema
+            .Where(u => string.IsNullOrWhiteSpace(u.PerfilAcesso))
+            .ToListAsync();
+
+        foreach (var usuarioSemPerfil in usuariosSemPerfil)
+        {
+            usuarioSemPerfil.PerfilAcesso = "Administrador";
+        }
+
+        var existeAdministradorAtivo = await context.UsuariosSistema
+            .AnyAsync(u => u.Ativo && u.PerfilAcesso == "Administrador");
+
+        if (!existeAdministradorAtivo)
+        {
+            var primeiroUsuarioAtivo = await context.UsuariosSistema
+                .Where(u => u.Ativo)
+                .OrderBy(u => u.Id)
+                .FirstOrDefaultAsync();
+
+            if (primeiroUsuarioAtivo != null)
+            {
+                primeiroUsuarioAtivo.PerfilAcesso = "Administrador";
+            }
+        }
+
+        await context.SaveChangesAsync();
         return;
     }
 
@@ -126,6 +203,7 @@ static async Task InicializarBancoEUsuarioAdminAsync(WebApplication app)
         NomeUsuarioNormalizado = "ADMIN",
         Nome = "Administrador",
         SenhaHash = string.Empty,
+        PerfilAcesso = "Administrador",
         Ativo = true,
         CriadoEmUtc = DateTime.UtcNow
     };

@@ -145,3 +145,22 @@
         min-width: 760px;
     }
 }
+
+/* Perfil Leitura: impede ações de cadastro, edição e exclusão no frontend.
+   A validação principal permanece no backend via políticas de autorização. */
+.perfil-leitura .btn-primary,
+.perfil-leitura .btn-outline-primary,
+.perfil-leitura .btn-outline-danger,
+.perfil-leitura .btn-danger {
+    pointer-events: none;
+    opacity: 0.45;
+    filter: grayscale(1);
+    cursor: not-allowed !important;
+}
+
+.perfil-leitura .btn-primary::after,
+.perfil-leitura .btn-outline-primary::after,
+.perfil-leitura .btn-outline-danger::after,
+.perfil-leitura .btn-danger::after {
+    content: "";
+}

@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -7,6 +8,7 @@ using PetApp.Models.Dtos;
 namespace PetApp.Controllers
 {
     [ApiController]
+    [Authorize(Policy = "Administrador")]
     [Route("api/[controller]")]
     public class UsuariosController : ControllerBase
     {
@@ -28,6 +30,7 @@ namespace PetApp.Controllers
                     Id = u.Id,
                     NomeUsuario = u.NomeUsuario,
                     Nome = u.Nome,
+                    PerfilAcesso = u.PerfilAcesso,
                     Ativo = u.Ativo,
                     CriadoEmUtc = u.CriadoEmUtc,
                     AtualizadoEmUtc = u.AtualizadoEmUtc
@@ -73,6 +76,8 @@ namespace PetApp.Controllers
                 return BadRequest(ModelState);
             }
 
+            var perfilAcesso = NormalizarPerfilAcesso(dto.PerfilAcesso);
+
             var nomeUsuario = dto.NomeUsuario.Trim();
             var nomeUsuarioNormalizado = NormalizarNomeUsuario(nomeUsuario);
 
@@ -91,6 +96,7 @@ namespace PetApp.Controllers
                 NomeUsuarioNormalizado = nomeUsuarioNormalizado,
                 Nome = dto.Nome.Trim(),
                 SenhaHash = string.Empty,
+                PerfilAcesso = perfilAcesso,
                 Ativo = dto.Ativo,
                 CriadoEmUtc = DateTime.UtcNow
             };
@@ -125,21 +131,29 @@ namespace PetApp.Controllers
             }
 
             var usuario = await _context.UsuariosSistema.FindAsync(id);
+
             if (usuario == null)
             {
                 return NotFound();
             }
 
-            if (usuario.Ativo && !dto.Ativo)
-            {
-                var totalUsuariosAtivos = await _context.UsuariosSistema
-                    .CountAsync(u => u.Ativo);
+            var perfilAcesso = NormalizarPerfilAcesso(dto.PerfilAcesso);
 
-                if (totalUsuariosAtivos <= 1)
+            if (usuario.Ativo &&
+                usuario.PerfilAcesso == "Administrador" &&
+                (!dto.Ativo || perfilAcesso != "Administrador"))
+            {
+                var existeOutroAdministradorAtivo = await _context.UsuariosSistema
+                    .AnyAsync(u =>
+                        u.Id != id &&
+                        u.Ativo &&
+                        u.PerfilAcesso == "Administrador");
+
+                if (!existeOutroAdministradorAtivo)
                 {
                     return BadRequest(new
                     {
-                        erro = "Não é possível desativar o único usuário ativo do sistema. Crie ou ative outro usuário antes."
+                        erro = "Não é possível remover, desativar ou alterar o perfil do único administrador ativo do sistema. Crie ou ative outro administrador antes."
                     });
                 }
             }
@@ -159,6 +173,7 @@ namespace PetApp.Controllers
             usuario.NomeUsuario = nomeUsuario;
             usuario.NomeUsuarioNormalizado = nomeUsuarioNormalizado;
             usuario.Nome = dto.Nome.Trim();
+            usuario.PerfilAcesso = perfilAcesso;
             usuario.Ativo = dto.Ativo;
             usuario.AtualizadoEmUtc = DateTime.UtcNow;
 
@@ -183,21 +198,25 @@ namespace PetApp.Controllers
         public async Task<IActionResult> DeleteUsuario(int id)
         {
             var usuario = await _context.UsuariosSistema.FindAsync(id);
+
             if (usuario == null)
             {
                 return NotFound();
             }
 
-            if (usuario.Ativo)
+            if (usuario.Ativo && usuario.PerfilAcesso == "Administrador")
             {
-                var totalUsuariosAtivos = await _context.UsuariosSistema
-                    .CountAsync(u => u.Ativo);
+                var existeOutroAdministradorAtivo = await _context.UsuariosSistema
+                    .AnyAsync(u =>
+                        u.Id != id &&
+                        u.Ativo &&
+                        u.PerfilAcesso == "Administrador");
 
-                if (totalUsuariosAtivos <= 1)
+                if (!existeOutroAdministradorAtivo)
                 {
                     return BadRequest(new
                     {
-                        erro = "Não é possível excluir o único usuário ativo do sistema. Crie ou ative outro usuário antes."
+                        erro = "Não é possível excluir o único administrador ativo do sistema. Crie ou ative outro administrador antes."
                     });
                 }
             }
@@ -215,6 +234,7 @@ namespace PetApp.Controllers
                 Id = usuario.Id,
                 NomeUsuario = usuario.NomeUsuario,
                 Nome = usuario.Nome,
+                PerfilAcesso = NormalizarPerfilAcesso(usuario.PerfilAcesso),
                 Ativo = usuario.Ativo,
                 CriadoEmUtc = usuario.CriadoEmUtc,
                 AtualizadoEmUtc = usuario.AtualizadoEmUtc
@@ -224,6 +244,17 @@ namespace PetApp.Controllers
         private static string NormalizarNomeUsuario(string nomeUsuario)
         {
             return nomeUsuario.Trim().ToUpperInvariant();
+        }
+
+        private static string NormalizarPerfilAcesso(string? perfil)
+        {
+            return perfil switch
+            {
+                "Administrador" => "Administrador",
+                "Cadastro" => "Cadastro",
+                "Leitura" => "Leitura",
+                _ => "Leitura"
+            };
         }
     }
 }

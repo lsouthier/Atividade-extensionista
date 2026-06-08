@@ -12,6 +12,8 @@ namespace PetApp.Models
 
         public required string SenhaHash { get; set; }
 
+        public string PerfilAcesso { get; set; } = "Leitura";
+
         public bool Ativo { get; set; } = true;
 
         public DateTime CriadoEmUtc { get; set; } = DateTime.UtcNow;

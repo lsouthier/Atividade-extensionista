@@ -23,7 +23,29 @@ const initialState: UsuariosState = {
 };
 
 const extrairErro = (e: any, fallback: string): string => {
-    return e?.message ?? e?.data?.erro ?? fallback;
+    const data = e?.response?.data ?? e?.data;
+
+    if (!data) {
+        return e?.message ?? fallback;
+    }
+
+    if (typeof data === 'string') {
+        return data;
+    }
+
+    if (typeof data?.erro === 'string') {
+        return data.erro;
+    }
+
+    if (typeof data?.message === 'string') {
+        return data.message;
+    }
+
+    if (typeof data?.title === 'string') {
+        return data.title;
+    }
+
+    return fallback;
 };
 
 export const carregarUsuarios = createAsyncThunk(
@@ -90,6 +112,7 @@ const usuariosSlice = createSlice({
             .addCase(carregarUsuarios.fulfilled, (state, action) => {
                 state.carregando = false;
                 state.itens = action.payload;
+                state.erro = undefined;
             })
             .addCase(carregarUsuarios.rejected, (state, action) => {
                 state.carregando = false;
@@ -98,28 +121,33 @@ const usuariosSlice = createSlice({
             .addCase(criarUsuario.fulfilled, (state, action) => {
                 state.itens.push(action.payload);
                 state.selecionado = null;
+                state.erro = undefined;
             })
             .addCase(criarUsuario.rejected, (state, action) => {
                 state.erro = String(action.payload ?? action.error.message ?? 'Erro ao criar usuário.');
             })
             .addCase(atualizarUsuario.fulfilled, (state, action) => {
                 const index = state.itens.findIndex(u => u.id === action.payload.id);
+
                 if (index >= 0) {
                     state.itens[index] = {
                         ...state.itens[index],
                         nomeUsuario: action.payload.nomeUsuario,
                         nome: action.payload.nome,
+                        perfilAcesso: action.payload.perfilAcesso,
                         ativo: action.payload.ativo
                     };
                 }
 
                 state.selecionado = null;
+                state.erro = undefined;
             })
             .addCase(atualizarUsuario.rejected, (state, action) => {
                 state.erro = String(action.payload ?? action.error.message ?? 'Erro ao atualizar usuário.');
             })
             .addCase(excluirUsuario.fulfilled, (state, action) => {
                 state.itens = state.itens.filter(u => u.id !== action.payload);
+                state.erro = undefined;
             })
             .addCase(excluirUsuario.rejected, (state, action) => {
                 state.erro = String(action.payload ?? action.error.message ?? 'Erro ao excluir usuário.');

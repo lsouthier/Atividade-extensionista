@@ -1,9 +1,12 @@
 import { axiosClient } from './axiosClient';
 
+export type PerfilAcesso = 'Leitura' | 'Cadastro' | 'Administrador';
+
 export interface UsuarioLogado {
     id: number;
     nomeUsuario: string;
     nome: string;
+    perfilAcesso: PerfilAcesso;
     ativo: boolean;
     criadoEmUtc: string;
     atualizadoEmUtc?: string | null;

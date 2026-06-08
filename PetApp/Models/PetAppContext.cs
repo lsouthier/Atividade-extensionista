@@ -150,6 +150,11 @@ namespace PetApp.Models
                 entity.Property(u => u.SenhaHash)
                     .IsRequired();
 
+
+                entity.Property(u => u.PerfilAcesso)
+                    .IsRequired()
+                    .HasMaxLength(30);
+
                 entity.Property(u => u.Ativo)
                     .IsRequired();
 

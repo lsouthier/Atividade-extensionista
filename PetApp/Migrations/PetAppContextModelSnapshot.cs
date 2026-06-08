@@ -260,6 +260,11 @@ namespace PetApp.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
 
+
+                    b.Property<string>("PerfilAcesso")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
                     b.Property<string>("SenhaHash")
                         .IsRequired()
                         .HasColumnType("text");

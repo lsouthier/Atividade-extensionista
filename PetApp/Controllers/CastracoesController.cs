@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PetApp.Models;
@@ -5,6 +6,7 @@ using PetApp.Models.Dtos;
 
 namespace PetApp.Controllers
 {
+    [Authorize(Policy = "PodeLer")]
     [ApiController]
     [Route("api/[controller]")]
     public class CastracoesController : ControllerBase
@@ -46,6 +48,7 @@ namespace PetApp.Controllers
 
             return Ok(MapToReadDto(castracao));
         }
+        [Authorize(Policy = "PodeCadastrar")]
 
         [HttpPost]
         public async Task<ActionResult<CastracaoReadDto>> CreateCastracao([FromBody] CastracaoCreateDto dto)
@@ -120,6 +123,7 @@ namespace PetApp.Controllers
                 return BadRequest(ModelState);
             }
         }
+        [Authorize(Policy = "PodeCadastrar")]
 
         [HttpPut("{id:int}")]
         public async Task<IActionResult> UpdateCastracao(int id, [FromBody] CastracaoUpdateDto dto)
@@ -205,6 +209,7 @@ namespace PetApp.Controllers
                 return BadRequest(ModelState);
             }
         }
+        [Authorize(Policy = "PodeCadastrar")]
 
         [HttpDelete("{id:int}")]
         public async Task<IActionResult> DeleteCastracao(int id)

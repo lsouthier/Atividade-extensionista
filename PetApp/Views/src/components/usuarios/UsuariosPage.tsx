@@ -8,7 +8,12 @@ import {
     excluirUsuario,
     selecionarUsuario
 } from '../../store/usuariosSlice';
-import { UsuarioSistema, UsuarioSistemaCreate, UsuarioSistemaUpdate } from '../../api/usuariosApi';
+import {
+    PerfilAcesso,
+    UsuarioSistema,
+    UsuarioSistemaCreate,
+    UsuarioSistemaUpdate
+} from '../../api/usuariosApi';
 import { Paginacao } from '../common/Paginacao';
 
 interface FormState {
@@ -16,16 +21,18 @@ interface FormState {
     nomeUsuario: string;
     nome: string;
     senha: string;
+    perfilAcesso: PerfilAcesso;
     ativo: boolean;
 }
 
-type UsuarioOrdenacaoCampo = 'nomeUsuario' | 'nome' | 'status' | 'criadoEmUtc';
+type UsuarioOrdenacaoCampo = 'nomeUsuario' | 'nome' | 'perfilAcesso' | 'status' | 'criadoEmUtc';
 type OrdenacaoDirecao = 'asc' | 'desc';
 
 const initialForm: FormState = {
     nomeUsuario: '',
     nome: '',
     senha: '',
+    perfilAcesso: 'Leitura',
     ativo: true
 };
 
@@ -55,6 +62,8 @@ const obterValorOrdenacao = (
             return normalizarTexto(usuario.nomeUsuario);
         case 'nome':
             return normalizarTexto(usuario.nome);
+        case 'perfilAcesso':
+            return normalizarTexto(usuario.perfilAcesso);
         case 'status':
             return usuario.ativo ? 1 : 0;
         case 'criadoEmUtc':
@@ -95,6 +104,19 @@ const CabecalhoOrdenavel: React.FC<{
     </th>
 );
 
+const badgePerfil = (perfil: PerfilAcesso): string => {
+    switch (perfil) {
+        case 'Administrador':
+            return 'bg-danger';
+        case 'Cadastro':
+            return 'bg-primary';
+        case 'Leitura':
+            return 'bg-secondary';
+        default:
+            return 'bg-secondary';
+    }
+};
+
 export const UsuariosPage: React.FC = () => {
     const dispatch = useDispatch<AppDispatch>();
     const { itens, carregando, erro, selecionado } = useSelector((state: RootState) => state.usuarios);
@@ -106,6 +128,7 @@ export const UsuariosPage: React.FC = () => {
 
     const [pesquisa, setPesquisa] = useState('');
     const [filtroStatus, setFiltroStatus] = useState('');
+    const [filtroPerfil, setFiltroPerfil] = useState('');
     const [ordenarPor, setOrdenarPor] = useState<UsuarioOrdenacaoCampo>('nomeUsuario');
     const [direcaoOrdenacao, setDirecaoOrdenacao] = useState<OrdenacaoDirecao>('asc');
 
@@ -119,7 +142,8 @@ export const UsuariosPage: React.FC = () => {
         const filtrados = itens.filter(usuario => {
             const textoBusca = [
                 usuario.nomeUsuario,
-                usuario.nome
+                usuario.nome,
+                usuario.perfilAcesso
             ]
                 .map(normalizarTexto)
                 .join(' ');
@@ -131,7 +155,11 @@ export const UsuariosPage: React.FC = () => {
                 (filtroStatus === 'ativo' && usuario.ativo) ||
                 (filtroStatus === 'inativo' && !usuario.ativo);
 
-            return atendePesquisa && atendeStatus;
+            const atendePerfil =
+                !filtroPerfil ||
+                usuario.perfilAcesso === filtroPerfil;
+
+            return atendePesquisa && atendeStatus && atendePerfil;
         });
 
         return [...filtrados].sort((a, b) => {
@@ -151,7 +179,7 @@ export const UsuariosPage: React.FC = () => {
 
             return direcaoOrdenacao === 'asc' ? comparacao : comparacao * -1;
         });
-    }, [itens, pesquisa, filtroStatus, ordenarPor, direcaoOrdenacao]);
+    }, [itens, pesquisa, filtroStatus, filtroPerfil, ordenarPor, direcaoOrdenacao]);
 
     const totalPaginas = Math.max(1, Math.ceil(usuariosFiltradosOrdenados.length / tamanhoPagina));
 
@@ -163,7 +191,7 @@ export const UsuariosPage: React.FC = () => {
 
     useEffect(() => {
         setPagina(1);
-    }, [pesquisa, filtroStatus, ordenarPor, direcaoOrdenacao]);
+    }, [pesquisa, filtroStatus, filtroPerfil, ordenarPor, direcaoOrdenacao]);
 
     const usuariosPaginados = useMemo(() => {
         const inicio = (pagina - 1) * tamanhoPagina;
@@ -183,6 +211,7 @@ export const UsuariosPage: React.FC = () => {
             nomeUsuario: usuario.nomeUsuario,
             nome: usuario.nome,
             senha: '',
+            perfilAcesso: usuario.perfilAcesso ?? 'Leitura',
             ativo: usuario.ativo
         });
         setShowModal(true);
@@ -197,6 +226,7 @@ export const UsuariosPage: React.FC = () => {
                 nomeUsuario: form.nomeUsuario,
                 nome: form.nome,
                 novaSenha: form.senha || undefined,
+                perfilAcesso: form.perfilAcesso,
                 ativo: form.ativo
             };
 
@@ -213,6 +243,7 @@ export const UsuariosPage: React.FC = () => {
             nomeUsuario: form.nomeUsuario,
             nome: form.nome,
             senha: form.senha,
+            perfilAcesso: form.perfilAcesso,
             ativo: form.ativo
         };
 
@@ -250,6 +281,7 @@ export const UsuariosPage: React.FC = () => {
     const limparFiltros = () => {
         setPesquisa('');
         setFiltroStatus('');
+        setFiltroPerfil('');
         setOrdenarPor('nomeUsuario');
         setDirecaoOrdenacao('asc');
         setPagina(1);
@@ -274,14 +306,28 @@ export const UsuariosPage: React.FC = () => {
                 <div className="card mb-3">
                     <div className="card-body">
                         <div className="row g-2">
-                            <div className="col-md-7">
+                            <div className="col-md-5">
                                 <label className="form-label">Pesquisar</label>
                                 <input
                                     className="form-control form-control-sm"
                                     value={pesquisa}
                                     onChange={(e) => setPesquisa(e.target.value)}
-                                    placeholder="Usuário ou nome"
+                                    placeholder="Usuário, nome ou perfil"
                                 />
+                            </div>
+
+                            <div className="col-md-2">
+                                <label className="form-label">Perfil</label>
+                                <select
+                                    className="form-select form-select-sm"
+                                    value={filtroPerfil}
+                                    onChange={(e) => setFiltroPerfil(e.target.value)}
+                                >
+                                    <option value="">Todos</option>
+                                    <option value="Leitura">Leitura</option>
+                                    <option value="Cadastro">Cadastro</option>
+                                    <option value="Administrador">Administrador</option>
+                                </select>
                             </div>
 
                             <div className="col-md-3">
@@ -317,34 +363,11 @@ export const UsuariosPage: React.FC = () => {
                     <table className="table table-sm table-striped align-middle">
                         <thead className="table-light">
                             <tr>
-                                <CabecalhoOrdenavel
-                                    campo="nomeUsuario"
-                                    titulo="Usuário"
-                                    ordenarPor={ordenarPor}
-                                    direcaoOrdenacao={direcaoOrdenacao}
-                                    onOrdenar={handleOrdenar}
-                                />
-                                <CabecalhoOrdenavel
-                                    campo="nome"
-                                    titulo="Nome"
-                                    ordenarPor={ordenarPor}
-                                    direcaoOrdenacao={direcaoOrdenacao}
-                                    onOrdenar={handleOrdenar}
-                                />
-                                <CabecalhoOrdenavel
-                                    campo="status"
-                                    titulo="Status"
-                                    ordenarPor={ordenarPor}
-                                    direcaoOrdenacao={direcaoOrdenacao}
-                                    onOrdenar={handleOrdenar}
-                                />
-                                <CabecalhoOrdenavel
-                                    campo="criadoEmUtc"
-                                    titulo="Criado em"
-                                    ordenarPor={ordenarPor}
-                                    direcaoOrdenacao={direcaoOrdenacao}
-                                    onOrdenar={handleOrdenar}
-                                />
+                                <CabecalhoOrdenavel campo="nomeUsuario" titulo="Usuário" ordenarPor={ordenarPor} direcaoOrdenacao={direcaoOrdenacao} onOrdenar={handleOrdenar} />
+                                <CabecalhoOrdenavel campo="nome" titulo="Nome" ordenarPor={ordenarPor} direcaoOrdenacao={direcaoOrdenacao} onOrdenar={handleOrdenar} />
+                                <CabecalhoOrdenavel campo="perfilAcesso" titulo="Perfil" ordenarPor={ordenarPor} direcaoOrdenacao={direcaoOrdenacao} onOrdenar={handleOrdenar} />
+                                <CabecalhoOrdenavel campo="status" titulo="Status" ordenarPor={ordenarPor} direcaoOrdenacao={direcaoOrdenacao} onOrdenar={handleOrdenar} />
+                                <CabecalhoOrdenavel campo="criadoEmUtc" titulo="Criado em" ordenarPor={ordenarPor} direcaoOrdenacao={direcaoOrdenacao} onOrdenar={handleOrdenar} />
                                 <th style={{ width: 130 }}>Ações</th>
                             </tr>
                         </thead>
@@ -353,6 +376,11 @@ export const UsuariosPage: React.FC = () => {
                                 <tr key={usuario.id}>
                                     <td>{usuario.nomeUsuario}</td>
                                     <td>{usuario.nome}</td>
+                                    <td>
+                                        <span className={`badge ${badgePerfil(usuario.perfilAcesso)}`}>
+                                            {usuario.perfilAcesso}
+                                        </span>
+                                    </td>
                                     <td>
                                         {usuario.ativo ? (
                                             <span className="badge bg-success">Ativo</span>
@@ -435,6 +463,26 @@ export const UsuariosPage: React.FC = () => {
                                             onChange={(e) => setForm(prev => ({ ...prev, nome: e.target.value }))}
                                             required
                                         />
+                                    </div>
+
+                                    <div className="mb-2">
+                                        <label className="form-label">Tipo de usuário *</label>
+                                        <select
+                                            className="form-select form-select-sm"
+                                            value={form.perfilAcesso}
+                                            onChange={(e) => setForm(prev => ({
+                                                ...prev,
+                                                perfilAcesso: e.target.value as PerfilAcesso
+                                            }))}
+                                            required
+                                        >
+                                            <option value="Leitura">Leitura</option>
+                                            <option value="Cadastro">Cadastro</option>
+                                            <option value="Administrador">Administrador</option>
+                                        </select>
+                                        <small className="text-muted">
+                                            Leitura visualiza dados. Cadastro cria, edita e exclui cadastros. Administrador possui acesso total.
+                                        </small>
                                     </div>
 
                                     <div className="mb-2">

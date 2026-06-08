@@ -1,5 +1,5 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
-import { login, LoginRequest, UsuarioLogado } from '../api/authApi';
+import { login, LoginRequest, UsuarioLogado, me } from '../api/authApi';
 
 interface AuthState {
     token?: string | null;
@@ -58,7 +58,18 @@ export const loginUsuario = createAsyncThunk(
         try {
             return await login(dados);
         } catch (e: any) {
-            return rejectWithValue(e?.message ?? 'Erro ao fazer login.');
+            return rejectWithValue(e?.response?.data?.erro ?? e?.message ?? 'Erro ao fazer login.');
+        }
+    }
+);
+
+export const validarSessaoServidor = createAsyncThunk(
+    'auth/validarSessaoServidor',
+    async (_, { rejectWithValue }) => {
+        try {
+            return await me();
+        } catch (e: any) {
+            return rejectWithValue(e?.response?.data?.erro ?? e?.message ?? 'Sessão expirada.');
         }
     }
 );
@@ -113,6 +124,19 @@ const authSlice = createSlice({
                 state.carregando = false;
                 state.autenticado = false;
                 state.erro = String(action.payload ?? action.error.message ?? 'Erro ao fazer login.');
+
+                limparSessao();
+            })
+            .addCase(validarSessaoServidor.fulfilled, (state, action) => {
+                state.usuario = action.payload;
+                sessionStorage.setItem('petapp_usuario', JSON.stringify(action.payload));
+            })
+            .addCase(validarSessaoServidor.rejected, (state) => {
+                state.token = null;
+                state.usuario = null;
+                state.expiraEmUtc = null;
+                state.autenticado = false;
+                state.erro = 'Sessão expirada. Faça login novamente.';
 
                 limparSessao();
             });
