@@ -255,8 +255,38 @@ export const TutorForm: React.FC<TutorFormProps> = ({ tutor, onSubmit, onCancel 
 
         const cepNumerico = obterCepNumerico(form.cep);
 
-        if (form.cep && cepNumerico.length !== 8) {
+        if (!cepNumerico) {
+            setErro('CEP do tutor é obrigatório.');
+            return;
+        }
+
+        if (cepNumerico.length !== 8) {
             setErro('CEP inválido. Use o formato 00000-000.');
+            return;
+        }
+
+        if (!form.logradouro.trim()) {
+            setErro('Rua ou logradouro é obrigatório.');
+            return;
+        }
+
+        if (!form.numero.trim()) {
+            setErro('Número é obrigatório. Use S/N quando não houver número.');
+            return;
+        }
+
+        if (!form.bairro.trim()) {
+            setErro('Bairro é obrigatório.');
+            return;
+        }
+
+        if (!form.cidade.trim()) {
+            setErro('Cidade é obrigatória.');
+            return;
+        }
+
+        if (!form.uf.trim() || form.uf.trim().length !== 2) {
+            setErro('UF é obrigatória e deve conter 2 letras.');
             return;
         }
 
@@ -316,7 +346,7 @@ export const TutorForm: React.FC<TutorFormProps> = ({ tutor, onSubmit, onCancel 
 
                 <div className="row">
                     <div className="col-md-4 mb-2">
-                        <label className="form-label">CEP</label>
+                        <label className="form-label">CEP *</label>
                         <input
                             type="text"
                             name="cep"
@@ -326,6 +356,7 @@ export const TutorForm: React.FC<TutorFormProps> = ({ tutor, onSubmit, onCancel 
                             maxLength={9}
                             placeholder="00000-000"
                             inputMode="numeric"
+                            required
                         />
                         <small className="form-text text-muted">
                             {consultandoCep ? 'Consultando CEP...' : 'Digite o CEP para preencher o endereço.'}
@@ -333,7 +364,7 @@ export const TutorForm: React.FC<TutorFormProps> = ({ tutor, onSubmit, onCancel 
                     </div>
 
                     <div className="col-md-6 mb-2">
-                        <label className="form-label">Cidade</label>
+                        <label className="form-label">Cidade *</label>
                         <input
                             type="text"
                             name="cidade"
@@ -341,11 +372,12 @@ export const TutorForm: React.FC<TutorFormProps> = ({ tutor, onSubmit, onCancel 
                             value={form.cidade}
                             onChange={handleChange}
                             maxLength={100}
+                            required
                         />
                     </div>
 
                     <div className="col-md-2 mb-2">
-                        <label className="form-label">UF</label>
+                        <label className="form-label">UF *</label>
                         <input
                             type="text"
                             name="uf"
@@ -353,6 +385,7 @@ export const TutorForm: React.FC<TutorFormProps> = ({ tutor, onSubmit, onCancel 
                             value={form.uf}
                             onChange={handleChange}
                             maxLength={2}
+                            required
                         />
                     </div>
                 </div>
@@ -361,7 +394,7 @@ export const TutorForm: React.FC<TutorFormProps> = ({ tutor, onSubmit, onCancel 
 
                 <div className="row">
                     <div className="col-md-8 mb-2">
-                        <label className="form-label">Rua / Logradouro</label>
+                        <label className="form-label">Rua / Logradouro *</label>
                         <input
                             type="text"
                             name="logradouro"
@@ -369,11 +402,12 @@ export const TutorForm: React.FC<TutorFormProps> = ({ tutor, onSubmit, onCancel 
                             value={form.logradouro}
                             onChange={handleChange}
                             maxLength={200}
+                            required
                         />
                     </div>
 
                     <div className="col-md-4 mb-2">
-                        <label className="form-label">Número</label>
+                        <label className="form-label">Número *</label>
                         <input
                             type="text"
                             name="numero"
@@ -381,13 +415,14 @@ export const TutorForm: React.FC<TutorFormProps> = ({ tutor, onSubmit, onCancel 
                             value={form.numero}
                             onChange={handleChange}
                             maxLength={20}
+                            required
                         />
                     </div>
                 </div>
 
                 <div className="row">
                     <div className="col-md-6 mb-2">
-                        <label className="form-label">Bairro</label>
+                        <label className="form-label">Bairro *</label>
                         <input
                             type="text"
                             name="bairro"
@@ -395,6 +430,7 @@ export const TutorForm: React.FC<TutorFormProps> = ({ tutor, onSubmit, onCancel 
                             value={form.bairro}
                             onChange={handleChange}
                             maxLength={100}
+                            required
                         />
                     </div>
 
@@ -453,7 +489,17 @@ export const TutorForm: React.FC<TutorFormProps> = ({ tutor, onSubmit, onCancel 
                     <button
                         type="submit"
                         className="btn btn-primary btn-sm"
-                        disabled={salvando || !form.nome.trim() || !form.telefone.replace(/\D/g, '')}
+                        disabled={
+                            salvando ||
+                            !form.nome.trim() ||
+                            !form.cep.replace(/\D/g, '') ||
+                            !form.logradouro.trim() ||
+                            !form.numero.trim() ||
+                            !form.bairro.trim() ||
+                            !form.cidade.trim() ||
+                            !form.uf.trim() ||
+                            !form.telefone.replace(/\D/g, '')
+                        }
                     >
                         {salvando ? 'Salvando...' : 'Salvar'}
                     </button>

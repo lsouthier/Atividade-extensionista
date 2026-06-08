@@ -65,6 +65,48 @@ namespace PetApp.Controllers
                 return BadRequest(ModelState);
             }
 
+            if (string.IsNullOrWhiteSpace(dto.Cep))
+            {
+                ModelState.AddModelError(nameof(dto.Cep), "CEP do tutor é obrigatório.");
+                return BadRequest(ModelState);
+            }
+
+            if (!CepValido(dto.Cep))
+            {
+                ModelState.AddModelError(nameof(dto.Cep), "CEP inválido. Informe 8 dígitos.");
+                return BadRequest(ModelState);
+            }
+
+            if (string.IsNullOrWhiteSpace(dto.Logradouro))
+            {
+                ModelState.AddModelError(nameof(dto.Logradouro), "Rua ou logradouro é obrigatório.");
+                return BadRequest(ModelState);
+            }
+
+            if (string.IsNullOrWhiteSpace(dto.Numero))
+            {
+                ModelState.AddModelError(nameof(dto.Numero), "Número é obrigatório. Use S/N quando não houver número.");
+                return BadRequest(ModelState);
+            }
+
+            if (string.IsNullOrWhiteSpace(dto.Bairro))
+            {
+                ModelState.AddModelError(nameof(dto.Bairro), "Bairro é obrigatório.");
+                return BadRequest(ModelState);
+            }
+
+            if (string.IsNullOrWhiteSpace(dto.Cidade))
+            {
+                ModelState.AddModelError(nameof(dto.Cidade), "Cidade é obrigatória.");
+                return BadRequest(ModelState);
+            }
+
+            if (string.IsNullOrWhiteSpace(dto.Uf) || dto.Uf.Trim().Length != 2)
+            {
+                ModelState.AddModelError(nameof(dto.Uf), "UF é obrigatória e deve conter 2 letras.");
+                return BadRequest(ModelState);
+            }
+
             if (string.IsNullOrWhiteSpace(dto.Telefone))
             {
                 ModelState.AddModelError(nameof(dto.Telefone), "Telefone do tutor é obrigatório.");
@@ -131,6 +173,48 @@ namespace PetApp.Controllers
             if (string.IsNullOrWhiteSpace(dto.Nome))
             {
                 ModelState.AddModelError(nameof(dto.Nome), "Nome do tutor é obrigatório e não pode estar vazio.");
+                return BadRequest(ModelState);
+            }
+
+            if (string.IsNullOrWhiteSpace(dto.Cep))
+            {
+                ModelState.AddModelError(nameof(dto.Cep), "CEP do tutor é obrigatório.");
+                return BadRequest(ModelState);
+            }
+
+            if (!CepValido(dto.Cep))
+            {
+                ModelState.AddModelError(nameof(dto.Cep), "CEP inválido. Informe 8 dígitos.");
+                return BadRequest(ModelState);
+            }
+
+            if (string.IsNullOrWhiteSpace(dto.Logradouro))
+            {
+                ModelState.AddModelError(nameof(dto.Logradouro), "Rua ou logradouro é obrigatório.");
+                return BadRequest(ModelState);
+            }
+
+            if (string.IsNullOrWhiteSpace(dto.Numero))
+            {
+                ModelState.AddModelError(nameof(dto.Numero), "Número é obrigatório. Use S/N quando não houver número.");
+                return BadRequest(ModelState);
+            }
+
+            if (string.IsNullOrWhiteSpace(dto.Bairro))
+            {
+                ModelState.AddModelError(nameof(dto.Bairro), "Bairro é obrigatório.");
+                return BadRequest(ModelState);
+            }
+
+            if (string.IsNullOrWhiteSpace(dto.Cidade))
+            {
+                ModelState.AddModelError(nameof(dto.Cidade), "Cidade é obrigatória.");
+                return BadRequest(ModelState);
+            }
+
+            if (string.IsNullOrWhiteSpace(dto.Uf) || dto.Uf.Trim().Length != 2)
+            {
+                ModelState.AddModelError(nameof(dto.Uf), "UF é obrigatória e deve conter 2 letras.");
                 return BadRequest(ModelState);
             }
 
@@ -268,6 +352,13 @@ namespace PetApp.Controllers
                 ModelState.AddModelError("", $"Erro inesperado: {ex.Message}");
                 return BadRequest(ModelState);
             }
+        }
+
+        private static bool CepValido(string? cep)
+        {
+            var digitos = new string((cep ?? string.Empty).Where(char.IsDigit).ToArray());
+
+            return digitos.Length == 8;
         }
 
         private static bool TelefoneValido(string? telefone)
