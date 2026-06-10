@@ -44,10 +44,10 @@ namespace PetApp.Services
                 using var scope = _scopeFactory.CreateScope();
                 var context = scope.ServiceProvider.GetRequiredService<PetAppContext>();
 
-                var agoraUtc = DateTime.UtcNow;
+                var hoje = DateTime.Today;
 
                 var castracoesVencidas = await context.Castracoes
-                    .Where(c => c.DataCastracao <= agoraUtc)
+                    .Where(c => c.DataCastracao.Date <= hoje)
                     .OrderBy(c => c.DataCastracao)
                     .ToListAsync(cancellationToken);
 
