@@ -286,7 +286,7 @@ namespace PetApp.Controllers
 
         private static bool CastracaoJaRealizada(DateTime dataCastracaoUtc)
         {
-            return dataCastracaoUtc <= DateTime.UtcNow;
+            return dataCastracaoUtc.Date <= DateTime.Today;
         }
 
         private async Task AtualizarStatusCastracaoAnimalSemDesmarcarAsync(int idAnimal)
@@ -306,7 +306,7 @@ namespace PetApp.Controllers
 
             animal.IdCastracao = castracaoPrincipal?.Id ?? 0;
 
-            if (castracoes.Any(c => c.DataCastracao <= DateTime.UtcNow))
+            if (castracoes.Any(c => c.DataCastracao.Date <= DateTime.Today))
             {
                 animal.EhCastrado = true;
             }

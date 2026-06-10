@@ -30,6 +30,7 @@ services:
       ASPNETCORE_ENVIRONMENT: Production
       ASPNETCORE_URLS: http://+:8080
       ConnectionStrings__DefaultConnection: Host=db;Port=5432;Database=PetAppDb;Username=postgres;Password=postgres
+      TZ: America/Sao_Paulo
     ports:
       - "127.0.0.1:5000:8080"
     depends_on:
