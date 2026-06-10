@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import * as XLSX from 'xlsx-js-style';
 import { useDispatch, useSelector } from 'react-redux';
 import type { RootState, AppDispatch } from '../../store';
 import {
@@ -29,6 +30,54 @@ const obterDataIso = (data: string): string => {
     }
 
     return data.split('T')[0];
+};
+
+const formatarDataBr = (data: string): string => {
+    const dataIso = obterDataIso(data);
+
+    if (!dataIso) {
+        return '';
+    }
+
+    const [ano, mes, dia] = dataIso.split('-');
+
+    if (!ano || !mes || !dia) {
+        return data;
+    }
+
+    return `${dia}/${mes}/${ano}`;
+};
+
+const formatarValorBr = (valor: number): string => {
+    return valor.toLocaleString('pt-BR', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+    });
+};
+
+const escaparHtml = (valor: string): string => {
+    return valor
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+};
+
+const obterDescricaoPeriodo = (dataInicio: string, dataFim: string): string => {
+    if (dataInicio && dataFim) {
+        return `${formatarDataBr(dataInicio)} a ${formatarDataBr(dataFim)}`;
+    }
+
+    if (dataInicio) {
+        return `A partir de ${formatarDataBr(dataInicio)}`;
+    }
+
+    if (dataFim) {
+        return `Até ${formatarDataBr(dataFim)}`;
+    }
+
+    return 'Todos os registros';
 };
 
 const dentroDoPeriodo = (data: string, inicio: string, fim: string): boolean => {
@@ -139,6 +188,275 @@ export const CastracoesPa: React.FC = () => {
         const inicio = (pagina - 1) * tamanhoPagina;
         return castracoesFiltradasOrdenadas.slice(inicio, inicio + tamanhoPagina);
     }, [castracoesFiltradasOrdenadas, pagina, tamanhoPagina]);
+
+    const totalValorFiltrado = useMemo(() => {
+        return castracoesFiltradasOrdenadas.reduce((total, castracao) => {
+            return total + (Number(castracao.valor) || 0);
+        }, 0);
+    }, [castracoesFiltradasOrdenadas]);
+
+    const gerarTabelaRelatorioHtml = (): string => {
+        const periodo = obterDescricaoPeriodo(dataInicio, dataFim);
+
+        const linhas = castracoesFiltradasOrdenadas.map(castracao => `
+            <tr>
+                <td>${escaparHtml(formatarDataBr(castracao.dataCastracao))}</td>
+                <td>${escaparHtml(castracao.nomeAnimal || '')}</td>
+                <td>${escaparHtml(castracao.nomeClinica || '')}</td>
+                <td style="text-align: right;">R$ ${escaparHtml(formatarValorBr(Number(castracao.valor) || 0))}</td>
+                <td>${escaparHtml(castracao.observacoes || '')}</td>
+            </tr>
+        `).join('');
+
+        return `
+            <html>
+                <head>
+                    <meta charset="utf-8" />
+                    <title>Relatório de Castrações</title>
+                    <style>
+                        body {
+                            font-family: Arial, sans-serif;
+                            font-size: 12px;
+                            color: #222;
+                        }
+
+                        h1 {
+                            font-size: 20px;
+                            margin-bottom: 4px;
+                        }
+
+                        .resumo {
+                            margin-bottom: 16px;
+                        }
+
+                        table {
+                            width: 100%;
+                            border-collapse: collapse;
+                        }
+
+                        th, td {
+                            border: 1px solid #999;
+                            padding: 6px;
+                        }
+
+                        th {
+                            background: #e9ecef;
+                            text-align: left;
+                        }
+
+                        tfoot td {
+                            font-weight: bold;
+                            background: #f8f9fa;
+                        }
+                    </style>
+                </head>
+                <body>
+                    <h1>Relatório de Castrações</h1>
+                    <div class="resumo">
+                        <div><strong>Período:</strong> ${escaparHtml(periodo)}</div>
+                        <div><strong>Pesquisa:</strong> ${escaparHtml(pesquisa || 'Todos os registros')}</div>
+                        <div><strong>Total de castrações:</strong> ${castracoesFiltradasOrdenadas.length}</div>
+                        <div><strong>Valor total:</strong> R$ ${escaparHtml(formatarValorBr(totalValorFiltrado))}</div>
+                    </div>
+
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Data</th>
+                                <th>Pet</th>
+                                <th>Clínica</th>
+                                <th>Valor</th>
+                                <th>Observações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${linhas || '<tr><td colspan="5">Nenhum registro encontrado.</td></tr>'}
+                        </tbody>
+                        <tfoot>
+                            <tr>
+                                <td colspan="3">Total</td>
+                                <td style="text-align: right;">R$ ${escaparHtml(formatarValorBr(totalValorFiltrado))}</td>
+                                <td>${castracoesFiltradasOrdenadas.length} registro(s)</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </body>
+            </html>
+        `;
+    };
+
+    const exportarExcel = () => {
+        const periodo = obterDescricaoPeriodo(dataInicio, dataFim);
+        const dataArquivo = new Date().toISOString().slice(0, 10);
+
+        const dados = [
+            ['Relatório de Castrações', '', '', '', ''],
+            [`Período: ${periodo}`, '', '', '', ''],
+            [`Pesquisa: ${pesquisa || 'Todos os registros'}`, '', '', '', ''],
+            [`Total de castrações: ${castracoesFiltradasOrdenadas.length}`, '', '', '', ''],
+            [`Valor total: R$ ${formatarValorBr(totalValorFiltrado)}`, '', '', '', ''],
+            [],
+            ['Data', 'Pet', 'Clínica', 'Valor', 'Observações'],
+            ...castracoesFiltradasOrdenadas.map(castracao => [
+                formatarDataBr(castracao.dataCastracao),
+                castracao.nomeAnimal || '',
+                castracao.nomeClinica || '',
+                Number(castracao.valor) || 0,
+                castracao.observacoes || ''
+            ]),
+            [],
+            ['Total', '', '', totalValorFiltrado, `${castracoesFiltradasOrdenadas.length} registro(s)`]
+        ];
+
+        const planilha = XLSX.utils.aoa_to_sheet(dados);
+
+        planilha['!cols'] = [
+            { wch: 14 },
+            { wch: 28 },
+            { wch: 34 },
+            { wch: 16 },
+            { wch: 50 }
+        ];
+
+        planilha['!merges'] = [
+            { s: { r: 0, c: 0 }, e: { r: 0, c: 4 } },
+            { s: { r: 1, c: 0 }, e: { r: 1, c: 4 } },
+            { s: { r: 2, c: 0 }, e: { r: 2, c: 4 } },
+            { s: { r: 3, c: 0 }, e: { r: 3, c: 4 } },
+            { s: { r: 4, c: 0 }, e: { r: 4, c: 4 } }
+        ];
+
+        const totalLinhas = dados.length;
+        const linhaCabecalho = 6;
+        const linhaTotal = totalLinhas - 1;
+
+        planilha['!autofilter'] = {
+            ref: `A${linhaCabecalho + 1}:E${linhaTotal - 1}`
+        };
+
+        const bordaFina = {
+            top: { style: 'thin', color: { rgb: 'BFBFBF' } },
+            bottom: { style: 'thin', color: { rgb: 'BFBFBF' } },
+            left: { style: 'thin', color: { rgb: 'BFBFBF' } },
+            right: { style: 'thin', color: { rgb: 'BFBFBF' } }
+        };
+
+        const estiloTitulo = {
+            font: { bold: true, sz: 16, color: { rgb: 'FFFFFF' } },
+            fill: { fgColor: { rgb: '5AA5B0' } },
+            alignment: { horizontal: 'center', vertical: 'center' }
+        };
+
+        const estiloResumo = {
+            font: { bold: true, color: { rgb: '1F2933' } },
+            fill: { fgColor: { rgb: 'EAF6F8' } },
+            alignment: { vertical: 'center' }
+        };
+
+        const estiloCabecalho = {
+            font: { bold: true, color: { rgb: 'FFFFFF' } },
+            fill: { fgColor: { rgb: '2E5961' } },
+            alignment: { horizontal: 'center', vertical: 'center' },
+            border: bordaFina
+        };
+
+        const estiloCelula = {
+            border: bordaFina,
+            alignment: { vertical: 'center' }
+        };
+
+        const estiloMoeda = {
+            border: bordaFina,
+            alignment: { horizontal: 'right', vertical: 'center' },
+            numFmt: 'R$ #,##0.00'
+        };
+
+        const estiloTotal = {
+            font: { bold: true },
+            fill: { fgColor: { rgb: 'D9EDEF' } },
+            border: bordaFina,
+            alignment: { vertical: 'center' }
+        };
+
+        const estiloTotalMoeda = {
+            font: { bold: true },
+            fill: { fgColor: { rgb: 'D9EDEF' } },
+            border: bordaFina,
+            alignment: { horizontal: 'right', vertical: 'center' },
+            numFmt: 'R$ #,##0.00'
+        };
+
+        for (let linha = 0; linha < totalLinhas; linha++) {
+            for (let coluna = 0; coluna < 5; coluna++) {
+                const endereco = XLSX.utils.encode_cell({ r: linha, c: coluna });
+
+                if (!planilha[endereco]) {
+                    planilha[endereco] = { t: 's', v: '' };
+                }
+
+                if (linha === 0) {
+                    planilha[endereco].s = estiloTitulo;
+                    continue;
+                }
+
+                if (linha >= 1 && linha <= 4) {
+                    planilha[endereco].s = estiloResumo;
+                    continue;
+                }
+
+                if (linha === linhaCabecalho) {
+                    planilha[endereco].s = estiloCabecalho;
+                    continue;
+                }
+
+                if (linha === linhaTotal) {
+                    planilha[endereco].s = coluna === 3 ? estiloTotalMoeda : estiloTotal;
+                    continue;
+                }
+
+                if (linha > linhaCabecalho && linha < linhaTotal - 1) {
+                    planilha[endereco].s = coluna === 3 ? estiloMoeda : estiloCelula;
+                }
+            }
+        }
+
+        const range = XLSX.utils.decode_range(planilha['!ref'] || 'A1:E1');
+
+        for (let linha = linhaCabecalho + 1; linha <= linhaTotal; linha++) {
+            const valorCell = XLSX.utils.encode_cell({ r: linha, c: 3 });
+
+            if (planilha[valorCell]) {
+                planilha[valorCell].t = 'n';
+                planilha[valorCell].z = 'R$ #,##0.00';
+            }
+        }
+
+        planilha['!ref'] = XLSX.utils.encode_range(range);
+
+        const workbook = XLSX.utils.book_new();
+
+        XLSX.utils.book_append_sheet(workbook, planilha, 'Castrações');
+        XLSX.writeFile(workbook, `relatorio-castracoes-${dataArquivo}.xlsx`);
+    };
+
+    const imprimirRelatorio = () => {
+        const html = gerarTabelaRelatorioHtml();
+        const janela = window.open('', '_blank', 'width=1024,height=768');
+
+        if (!janela) {
+            window.alert('Não foi possível abrir a janela de impressão. Verifique se o bloqueador de pop-ups está ativo.');
+            return;
+        }
+
+        janela.document.open();
+        janela.document.write(html);
+        janela.document.close();
+        janela.focus();
+
+        setTimeout(() => {
+            janela.print();
+        }, 300);
+    };
 
     const handleNovo = () => {
         dispatch(selecionarCastracao(null));
@@ -256,12 +574,43 @@ export const CastracoesPa: React.FC = () => {
                                     Limpar
                                 </button>
                             </div>
+
+                            <div className="col-12 d-flex justify-content-end gap-2 mt-2 flex-wrap">
+                                <button
+                                    className="btn btn-outline-success btn-sm"
+                                    type="button"
+                                    onClick={exportarExcel}
+                                    disabled={castracoesFiltradasOrdenadas.length === 0}
+                                >
+                                    Exportar Excel
+                                </button>
+
+                                <button
+                                    className="btn btn-outline-primary btn-sm"
+                                    type="button"
+                                    onClick={imprimirRelatorio}
+                                    disabled={castracoesFiltradasOrdenadas.length === 0}
+                                >
+                                    Imprimir
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
 
                 {carregando && <div className="alert alert-info">Carregando...</div>}
                 {erro && <div className="alert alert-danger">{erro}</div>}
+
+                {castracoesFiltradasOrdenadas.length > 0 && (
+                    <div className="alert alert-light border d-flex justify-content-between flex-wrap gap-2">
+                        <span>
+                            <strong>Total de castrações:</strong> {castracoesFiltradasOrdenadas.length}
+                        </span>
+                        <span>
+                            <strong>Valor total:</strong> R$ {formatarValorBr(totalValorFiltrado)}
+                        </span>
+                    </div>
+                )}
 
                 <CastracoesList
                     castracoes={castracoesPaginadas}
