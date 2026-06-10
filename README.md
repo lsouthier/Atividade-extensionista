@@ -1,6 +1,6 @@
 # PetApp ACAT
 
-**Versão atual:** 1.6.9
+**Versão atual:** 1.7.0
 
 Sistema web desenvolvido para apoio ao controle de pets, tutores, clínicas veterinárias, castrações, usuários e registros de auditoria da ACAT, Associação Cuidado Animal de Teutônia.
 
@@ -50,6 +50,7 @@ A solução reduz a dependência de controles manuais, cadernos e planilhas isol
 - Telefone obrigatório para tutores.
 - Cadastro de clínicas veterinárias.
 - Registro de castrações realizadas ou agendadas.
+- Relatório de castrações com exportação em Excel formatado e opção de impressão.
 - Atualização automática do status de castração quando a data programada é atingida.
 - Auditoria de ações realizadas no sistema.
 - Invalidação automática da sessão quando o usuário logado é alterado.
@@ -92,6 +93,30 @@ A solução reduz a dependência de controles manuais, cadernos e planilhas isol
 
 ---
 
+## Relatórios
+
+A tela de castrações permite gerar relatórios com base nos filtros aplicados na própria página.
+
+Recursos disponíveis:
+
+- Filtro por período.
+- Filtro por pesquisa de pet, clínica ou observações.
+- Total de castrações filtradas.
+- Soma total dos valores filtrados.
+- Exportação em Excel `.xlsx` com formatação.
+- Opção de impressão do relatório filtrado.
+
+O relatório exportado inclui:
+
+- Data da castração.
+- Pet.
+- Clínica.
+- Valor.
+- Observações.
+- Total geral.
+
+---
+
 ## Tecnologias utilizadas
 
 ### Backend
@@ -113,6 +138,7 @@ A solução reduz a dependência de controles manuais, cadernos e planilhas isol
 - Bootstrap
 - Vite
 - Nginx
+- Exportação Excel com xlsx-js-style.
 
 ### Infraestrutura
 
@@ -228,7 +254,7 @@ PetApp/Views/src/appVersion.ts
 Para atualizar a versão:
 
 ```bash
-./set-version.sh 1.6.6
+./set-version.sh 1.7.0
 docker compose up -d --build frontend
 ```
 
@@ -241,7 +267,7 @@ MAJOR.MINOR.PATCH
 Exemplo:
 
 ```text
-1.6.5
+1.7.0
 ```
 
 ---
