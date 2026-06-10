@@ -1,6 +1,6 @@
 # PetApp ACAT
 
-**Versão atual:** 1.7.0
+**Versão atual:** 1.7.1
 
 Sistema web desenvolvido para apoio ao controle de pets, tutores, clínicas veterinárias, castrações, usuários e registros de auditoria da ACAT, Associação Cuidado Animal de Teutônia.
 
@@ -254,7 +254,7 @@ PetApp/Views/src/appVersion.ts
 Para atualizar a versão:
 
 ```bash
-./set-version.sh 1.7.0
+./set-version.sh 1.7.1
 docker compose up -d --build frontend
 ```
 
@@ -267,7 +267,7 @@ MAJOR.MINOR.PATCH
 Exemplo:
 
 ```text
-1.7.0
+1.7.1
 ```
 
 ---
